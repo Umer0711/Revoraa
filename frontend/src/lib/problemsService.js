@@ -316,7 +316,7 @@ export async function getTodayRevisions(userId) {
       id, revision_number, next_revision_date, interval_days, ease_factor,
       solved_problem:solved_problems!inner(
         id, confidence, notes, status, user_pattern,
-        problem:problems(id, title, slug, difficulty, url, external_problem_id, problem_tags(tag), problem_companies(company:companies(name)), coding_platforms(name, color_hex))
+        problem:problems(id, title, slug, difficulty, url, external_problem_id, problem_tags(tag), problem_companies(company:companies(name)), coding_platforms(name))
       )
     `)
     .eq('user_id', userId)
