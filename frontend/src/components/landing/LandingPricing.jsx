@@ -10,7 +10,7 @@ export const LandingPricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
-  const { user, refreshProfile } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleApplyCoupon = () => {
@@ -64,7 +64,7 @@ export const LandingPricing = () => {
         order_id: orderData.order.id,
         handler: async (response) => {
           try {
-            const { error: verifyError } = await supabase.functions.invoke('razorpay-verify', {
+            const { data: verifyData, error: verifyError } = await supabase.functions.invoke('razorpay-verify', {
               body: {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
@@ -93,7 +93,9 @@ export const LandingPricing = () => {
               throw new Error(err || 'Failed to verify payment');
             }
             
-            await refreshProfile();
+            if (verifyData?.status === 'failed_activation') {
+              alert('Payment received! Activation is pending and will complete shortly.');
+            }
             navigate('/dashboard');
           } catch (err) {
             alert('Payment verification failed: ' + err.message);
@@ -118,6 +120,21 @@ export const LandingPricing = () => {
   
   const getMonthlyPrice = () => couponApplied ? 99 : 149;
   const getYearlyPrice = () => couponApplied ? 999 : 1499;
+
+  const isProMonthlyActive = profile?.role === 'pro_monthly' && profile?.subscription_status === 'active';
+  const isProYearlyActive = profile?.role === 'pro_yearly' && profile?.subscription_status === 'active';
+  
+  const getProButtonText = () => {
+    if (isProYearlyActive) return 'Current Plan (Yearly)';
+    if (isProMonthlyActive && billingCycle === 'monthly') return 'Current Plan (Monthly)';
+    return 'Upgrade to Pro';
+  };
+  
+  const getProButtonState = () => {
+    if (isProYearlyActive) return true; // Disabled
+    if (isProMonthlyActive && billingCycle === 'monthly') return true; // Disabled
+    return false; // Can upgrade
+  };
 
   return (
     <section id="pricing" style={{ padding: '6rem 2rem', position: 'relative', overflow: 'hidden' }}>
@@ -254,8 +271,8 @@ export const LandingPricing = () => {
               <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 500, alignSelf: 'flex-end', marginBottom: '0.8rem' }}>/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </div>
             
-            <button onClick={handleUpgrade} disabled={loading} style={{ background: 'var(--color-primary)', color: '#000', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginBottom: '2rem', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 4px 14px rgba(255,171,0,0.3)' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(255,171,0,0.4)'; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 14px rgba(255,171,0,0.3)'; }}>
-              Upgrade to Pro <ArrowRight size={16} style={{ display: 'inline', marginLeft: '0.5rem' }}/>
+            <button onClick={handleUpgrade} disabled={loading || getProButtonState()} style={{ background: getProButtonState() ? 'var(--color-bg-light)' : 'var(--color-primary)', color: getProButtonState() ? 'var(--color-text-muted)' : '#000', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: getProButtonState() ? 'default' : 'pointer', marginBottom: '2rem', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: getProButtonState() ? 'none' : '0 4px 14px rgba(255,171,0,0.3)' }} onMouseOver={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(255,171,0,0.4)'; } }} onMouseOut={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 14px rgba(255,171,0,0.3)'; } }}>
+              {getProButtonText()} {!getProButtonState() && <ArrowRight size={16} style={{ display: 'inline', marginLeft: '0.5rem' }}/>}
             </button>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>

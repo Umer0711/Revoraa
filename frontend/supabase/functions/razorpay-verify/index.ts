@@ -91,6 +91,13 @@ serve(async (req: Request) => {
     }
 
     if (!result.success) {
+      if (result.status === 'failed_activation') {
+        console.warn(`Payment ${razorpay_payment_id} recorded, but activation failed:`, result.message);
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 202, // Accepted, but processing not complete
+        });
+      }
       return sendError(400, result.error || result.message || 'Payment processing failed');
     }
 

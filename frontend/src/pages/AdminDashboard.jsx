@@ -31,6 +31,7 @@ export function AdminDashboard() {
   // Modals/Forms
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: '', discount_amount: 0, discount_percentage: 0, max_uses: 100 });
+  const [retryingPaymentId, setRetryingPaymentId] = useState(null);
 
   useEffect(() => {
     fetchData(activeTab);
@@ -147,6 +148,27 @@ export function AdminDashboard() {
       fetchData('users');
     } catch (err) {
       alert('Error extending: ' + err.message);
+    }
+  };
+
+  const handleRetryActivation = async (paymentId) => {
+    if (!window.confirm('Are you sure you want to retry this payment activation?')) return;
+    try {
+      setRetryingPaymentId(paymentId);
+      const { data, error } = await supabase.rpc('retry_subscription_activation', {
+        p_payment_id: paymentId
+      });
+      if (error) throw error;
+      if (data?.success) {
+        alert('Activation successful!');
+        fetchData('billing');
+      } else {
+        alert('Failed: ' + (data?.message || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Error retrying activation: ' + err.message);
+    } finally {
+      setRetryingPaymentId(null);
     }
   };
 
@@ -388,8 +410,9 @@ export function AdminDashboard() {
                         <th style={{ padding: '1rem 0.5rem' }}>Date</th>
                         <th style={{ padding: '1rem 0.5rem' }}>User</th>
                         <th style={{ padding: '1rem 0.5rem' }}>Amount</th>
-                        <th style={{ padding: '1rem 0.5rem' }}>Order ID</th>
+                        <th style={{ padding: '1rem 0.5rem' }}>Payment / Order ID</th>
                         <th style={{ padding: '1rem 0.5rem' }}>Status</th>
+                        <th style={{ padding: '1rem 0.5rem' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -406,12 +429,25 @@ export function AdminDashboard() {
                             {b.amount} {b.currency}
                           </td>
                           <td style={{ padding: '1rem 0.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-                            {b.razorpay_order_id}
+                            <div style={{ fontWeight: 600 }}>P: {b.razorpay_payment_id || 'N/A'}</div>
+                            <div>O: {b.razorpay_order_id}</div>
                           </td>
                           <td style={{ padding: '1rem 0.5rem' }}>
-                            <span style={{ padding: '0.25rem 0.5rem', background: b.status === 'success' ? 'rgba(16,185,129,0.1)' : b.status === 'failed' ? 'rgba(239,68,68,0.1)' : 'var(--color-bg-light)', color: b.status === 'success' ? 'var(--color-success)' : b.status === 'failed' ? 'var(--color-mistakes)' : 'var(--color-text-muted)', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
-                              {b.status}
+                            <span style={{ padding: '0.25rem 0.5rem', background: b.status === 'success' ? 'rgba(16,185,129,0.1)' : (b.status === 'failed' || b.status === 'failed_activation') ? 'rgba(239,68,68,0.1)' : 'var(--color-bg-light)', color: b.status === 'success' ? 'var(--color-success)' : (b.status === 'failed' || b.status === 'failed_activation') ? 'var(--color-mistakes)' : 'var(--color-text-muted)', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                              {b.status.replace('_', ' ')}
                             </span>
+                          </td>
+                          <td style={{ padding: '1rem 0.5rem' }}>
+                            {b.status === 'failed_activation' && (
+                              <button 
+                                onClick={() => handleRetryActivation(b.razorpay_payment_id)}
+                                disabled={retryingPaymentId === b.razorpay_payment_id}
+                                className="btn btn-primary" 
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                              >
+                                {retryingPaymentId === b.razorpay_payment_id ? 'Retrying...' : 'Retry'}
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
