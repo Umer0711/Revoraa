@@ -1,0 +1,198 @@
+/* Landing Page specific styles */
+
+.landing-bento-1 { grid-column: span 12; }
+.landing-bento-2 { grid-column: span 12; }
+.landing-bento-3 { grid-column: span 12; }
+.landing-bento-4 { grid-column: span 12; }
+
+@media (min-width: 768px) {
+  .landing-bento-1 { grid-column: span 8; }
+  .landing-bento-2 { grid-column: span 4; }
+  .landing-bento-3 { grid-column: span 5; }
+  .landing-bento-4 { grid-column: span 7; }
+}
+
+.footer-col-12 { grid-column: span 12; }
+.footer-col-6 { grid-column: span 6; }
+
+@media (min-width: 768px) {
+  .footer-col-12.desktop-4 { grid-column: span 4; }
+  .footer-col-6.desktop-2 { grid-column: span 2; }
+}
+
+.footer-bottom {
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .footer-bottom {
+    flex-direction: row;
+  }
+  .footer-bottom-links {
+    margin-top: 0 !important;
+  }
+}
+
+/* =============================================
+   FINAL UI POLISH (GEMINI / CURSOR STYLE)
+   ============================================= */
+
+/* Ambient Lighting Base */
+@keyframes ambientGlow {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+  33% { transform: scale(1.15) translate(2%, 3%); opacity: 0.6; }
+  66% { transform: scale(0.9) translate(-2%, 1%); opacity: 0.5; }
+  100% { transform: scale(1) translate(0, 0); opacity: 0.4; }
+}
+
+.landing-ambient-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.landing-ambient-bg::before {
+  content: '';
+  position: absolute;
+  top: -20%; left: -10%; width: 120%; height: 120%;
+  background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 30%, transparent 70%),
+              radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.02) 0%, transparent 60%);
+  filter: blur(80px);
+  animation: ambientGlow 15s ease-in-out infinite;
+  transform-origin: center top;
+}
+
+/* Light mode: much softer ambient, warm not amber-tinted */
+[data-theme="light"] .landing-ambient-bg::before {
+  background: radial-gradient(circle at 50% 0%, rgba(180, 83, 9, 0.03) 0%, transparent 60%),
+              radial-gradient(circle at 80% 20%, rgba(180, 83, 9, 0.02) 0%, transparent 50%);
+  filter: blur(120px);
+}
+
+.landing-ambient-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.6;
+  mix-blend-mode: overlay;
+}
+
+/* Google Gemini Style Glass Edges */
+@keyframes edgeSweep {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gemini-glass {
+  background: rgba(18, 18, 18, 0.6);
+  backdrop-filter: blur(48px) saturate(160%);
+  -webkit-backdrop-filter: blur(48px) saturate(160%);
+  border-radius: 24px;
+  position: relative;
+  box-shadow: 
+    0 40px 100px -20px rgba(0,0,0,0.9),
+    0 20px 40px -10px rgba(0,0,0,0.6),
+    inset 0 1px 1px rgba(255,255,255,0.2),
+    inset 0 -1px 1px rgba(0,0,0,0.5);
+  transition: box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light mode: white glass with depth shadow */
+[data-theme="light"] .gemini-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    0 30px 80px -15px rgba(0,0,0,0.18),
+    0 12px 32px -8px rgba(0,0,0,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -1px 0 rgba(0,0,0,0.04);
+}
+
+[data-theme="light"] .gemini-glass:hover {
+  box-shadow:
+    0 40px 100px -15px rgba(0,0,0,0.22),
+    0 16px 40px -8px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -1px 0 rgba(0,0,0,0.04);
+}
+
+.gemini-glass:hover {
+  box-shadow: 
+    0 50px 120px -20px rgba(0,0,0,0.95),
+    0 30px 60px -10px rgba(0,0,0,0.7),
+    inset 0 1px 2px rgba(255,255,255,0.3),
+    inset 0 -1px 2px rgba(0,0,0,0.6);
+}
+
+.gemini-glass::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 25px;
+  padding: 1px;
+  /* Subtle amber edge sweep – dark mode */
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.25) 0%,
+    rgba(255,255,255,0.04) 20%,
+    rgba(245,158,11,0.25) 48%,
+    rgba(245,158,11,0.06) 62%,
+    rgba(255,255,255,0.04) 85%,
+    rgba(255,255,255,0.15) 100%);
+  background-size: 250% 250%;
+  animation: edgeSweep 12s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Light mode: warm-tinted border, no strong amber bloom */
+[data-theme="light"] .gemini-glass::before {
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.9) 0%,
+    rgba(255,255,255,0.4) 20%,
+    rgba(180,83,9,0.12) 48%,
+    rgba(180,83,9,0.04) 62%,
+    rgba(255,255,255,0.4) 85%,
+    rgba(255,255,255,0.9) 100%);
+  animation-duration: 18s;
+}
+
+/* Hide StoryCursor on mobile */
+@media (max-width: 768px) {
+  .story-cursor-wrapper {
+    display: none !important;
+  }
+}
+
+/* =============================================
+   LIGHT MODE – SECTION DEPTH & ALTERNATION
+   ============================================= */
+
+/* Alternate section background for visual rhythm */
+[data-theme="light"] .landing-section-alt {
+  background: #F6F3EE;
+}
+
+/* Landing page body background override for light mode */
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(circle at 30% 10%, rgba(180, 83, 9, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(180, 83, 9, 0.03) 0%, transparent 50%),
+    #F8F6F2;
+}
+
+/* Navbar light mode override */
+[data-theme="light"] .landing-nav-scrolled {
+  background: rgba(250, 248, 245, 0.88) !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  box-shadow: 0 8px 32px -8px rgba(0,0,0,0.10), inset 0 -1px 0 rgba(0,0,0,0.06) !important;
+}
+

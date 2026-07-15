@@ -1,0 +1,4 @@
+/* ProblemLibrary-specific overrides – all base styles in index.css */
+.library-page {
+  padding-bottom: 3rem;
+}

@@ -1,0 +1,4 @@
+/* Dashboard-specific layout overrides */
+.dashboard-page {
+  padding-bottom: 3rem;
+}
