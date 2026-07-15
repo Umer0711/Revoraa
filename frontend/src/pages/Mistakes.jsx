@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { getAllMistakesData } from '../lib/dataService';
 import { useAuth } from '../contexts/AuthContext';
 import { useRealtime } from '../contexts/RealtimeContext';
+import { SEO } from '../components/SEO';
+
 
 export const Mistakes = () => {
   const { user } = useAuth();
@@ -35,6 +37,7 @@ export const Mistakes = () => {
 
   return (
     <div>
+      <SEO title="Mistakes" url="https://revoraa.com/mistakes" />
       <header className="page-header">
         <h1>Mistakes</h1>
         <p className="text-secondary">Common errors and anti-patterns to watch out for.</p>

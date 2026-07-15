@@ -5,6 +5,8 @@ import { getAnalyticsData } from '../lib/dataService';
 import { useAuth } from '../contexts/AuthContext';
 import { useRealtime } from '../contexts/RealtimeContext';
 import { supabase } from '../lib/supabaseClient';
+import { SEO } from '../components/SEO';
+
 
 export const Patterns = () => {
   const { user } = useAuth();
@@ -81,6 +83,7 @@ export const Patterns = () => {
                 className="bento-card col-span-2" 
                 style={{ position: 'relative' }}
               >
+      <SEO title="Pattern Analytics" url="https://revoraa.com/patterns" />
                 <AccentBar color={color} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
                   <div>

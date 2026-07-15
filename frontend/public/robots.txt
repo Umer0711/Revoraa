@@ -1,0 +1,29 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
+Disallow: /profile
+Disallow: /revision
+Disallow: /analytics
+Disallow: /shop
+Disallow: /readiness
+Disallow: /mistakes
+Disallow: /achievements
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://revoraa.com/sitemap.xml

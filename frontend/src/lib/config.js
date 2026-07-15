@@ -56,14 +56,14 @@ export const supabaseConfig = {
  */
 export const appConfig = {
   url:           import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
-  supportEmail:  import.meta.env.VITE_SUPPORT_EMAIL || 'support@revoraa.com',
+  supportEmail:  import.meta.env.VITE_SUPPORT_EMAIL || 'support@revoraa.co.in',
   senderEmail:   import.meta.env.VITE_SENDER_EMAIL  || 'reminders@revoraa.com',
 };
 
 // ─── Auth Redirect URLs ───────────────────────────────────────────────────────
 
 export const authConfig = {
-  oauthCallbackUrl:    `${appConfig.url}/auth/success`,
+  oauthCallbackUrl:    `${appConfig.url}/auth/callback`,
   passwordResetUrl:    `${appConfig.url}/reset-password`,
 };
 

@@ -2,12 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { getDeviceFingerprint, getBrowserInfo } from '../lib/fingerprint';
 import { usePushNotifications } from '../lib/usePushNotifications';
+import { getUserSettings, updateUserTimezone } from '../lib/dataService';
 
 const AuthContext = createContext({});
 
-import { getUserSettings, updateUserTimezone } from '../lib/dataService';
-
-// Inner component so hooks can use user state
 function AuthConsumer({ user, children }) {
   usePushNotifications(user?.id ?? null);
   
@@ -19,8 +17,6 @@ function AuthConsumer({ user, children }) {
           localStorage.setItem('revoraa_theme', settings.theme);
         }
       }).catch(console.error);
-
-      // Sync local timezone
       updateUserTimezone(user.id).catch(console.error);
     }
   }, [user?.id]);
@@ -29,82 +25,105 @@ function AuthConsumer({ user, children }) {
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser]       = useState(null);
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [session, setSession] = useState(null);
+  const [subscriptionData, setSubscriptionData] = useState(null);
+  const [usageData, setUsageData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProfile(uid) {
+    async function fetchUserData(uid) {
       if (!uid) {
         setProfile(null);
+        setSubscriptionData(null);
+        setUsageData(null);
         return;
       }
-      const { data } = await supabase.from('profiles').select('*').eq('auth_id', uid).single();
-      setProfile(data);
+      
+      const [profileRes, subRes, usageRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('auth_id', uid).maybeSingle(),
+        supabase.from('subscriptions').select('*').eq('user_id', uid).maybeSingle(),
+        supabase.from('solved_problems').select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+      ]);
+      
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+        setUsageData({
+          problems_added_this_month: profileRes.data.monthly_problem_usage || 0,
+          monthly_problem_limit: profileRes.data.monthly_problem_limit || 15,
+          usage_reset_date: profileRes.data.usage_reset_date
+        });
+      }
+      if (subRes.data) setSubscriptionData(subRes.data);
     }
 
-    // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      await fetchProfile(session?.user?.id);
+      await fetchUserData(session?.user?.id);
+      
       if (session?.user) {
-        await supabase.rpc('register_device', {
+        supabase.rpc('register_device', {
           p_fingerprint: getDeviceFingerprint(),
           p_browser_info: getBrowserInfo(),
           p_os_info: navigator.platform
-        });
+        }).then(({ error }) => { if(error) console.error(error) });
       }
       setLoading(false);
     });
 
-    // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      await fetchProfile(session?.user?.id);
+      await fetchUserData(session?.user?.id);
       setLoading(false);
     });
 
+    let deviceChannel, subChannel, profileChannel, usageChannel;
     
-    // Device Session Enforcement via Realtime
-    let deviceChannel;
     if (session?.user) {
-      deviceChannel = supabase
-        .channel(`device:${session.user.id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'device_sessions',
-          filter: `user_id=eq.${session.user.id}`
-        }, (payload) => {
+      deviceChannel = supabase.channel(`device:${session.user.id}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'device_sessions', filter: `user_id=eq.${session.user.id}` }, (payload) => {
           if (payload.new.device_fingerprint !== getDeviceFingerprint()) {
             alert('Your account was signed in from another device. You have been logged out.');
             supabase.auth.signOut();
           }
-        })
-        .subscribe();
+        }).subscribe();
+        
+      subChannel = supabase.channel(`sub:${session.user.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `user_id=eq.${session.user.id}` }, (payload) => {
+          setSubscriptionData(payload.new);
+        }).subscribe();
+        
+      profileChannel = supabase.channel(`profile:${session.user.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `auth_id=eq.${session.user.id}` }, (payload) => {
+          setProfile(payload.new);
+        }).subscribe();
+        
+      usageChannel = supabase.channel(`usage:${session.user.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solved_problems', filter: `user_id=eq.${session.user.id}` }, () => {
+          // Re-fetch the user data to update the problem count when a new problem is solved
+          fetchUserData(session.user.id);
+        }).subscribe();
     }
 
     return () => {
       subscription.unsubscribe();
       if (deviceChannel) supabase.removeChannel(deviceChannel);
+      if (subChannel) supabase.removeChannel(subChannel);
+      if (profileChannel) supabase.removeChannel(profileChannel);
+      if (usageChannel) supabase.removeChannel(usageChannel);
     };
-  }, []);
+  }, [session?.user?.id]); // depend on session.user.id so realtime channels attach correctly after login
 
   const value = {
     session,
     user,
     profile,
+    subscriptionData,
+    usageData,
     loading,
-    signOut: () => supabase.auth.signOut(),
-    refreshProfile: async () => {
-      if (user?.id) {
-        const { data } = await supabase.from('profiles').select('*').eq('auth_id', user.id).single();
-        setProfile(data);
-      }
-    }
   };
 
   return (

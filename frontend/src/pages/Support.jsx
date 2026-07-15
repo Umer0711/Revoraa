@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { BookOpen, Globe, Info, Users } from 'lucide-react';
 import { submitSupportTicket } from '../lib/dataService';
 import { useAuth } from '../contexts/AuthContext';
+import { SEO } from '../components/SEO';
+
 
 export const Support = () => {
   const { user } = useAuth();
@@ -27,6 +29,7 @@ export const Support = () => {
 
   return (
     <div>
+      <SEO title="Support" url="https://revoraa.com/support" />
       <header className="page-header">
         <h1>Support</h1>
         <p className="text-secondary">We're here to help. Reach out anytime.</p>
@@ -37,7 +40,7 @@ export const Support = () => {
           { icon: BookOpen, title: 'Documentation', sub: 'Read guides, tutorials, and FAQs.', href: '#' },
           { icon: Globe,    title: 'Community',     sub: 'Join our Discord and connect with peers.', href: '#' },
           { icon: Info,     title: 'Bug Report',    sub: 'Found an issue? Let us know.', href: '#' },
-          { icon: Users,    title: 'Contact Us',    sub: 'Reach the team directly at support@interviewos.io', href: '#' },
+          { icon: Users,    title: 'Contact Us',    sub: 'Reach the team directly at support@revoraa.co.in', href: 'mailto:support@revoraa.co.in' },
         ].map(({ icon: Icon, title, sub, href }, i) => (
           <motion.a 
             key={title} 

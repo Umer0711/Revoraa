@@ -13,18 +13,19 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
 *.env
 
 # Dependencies
 node_modules/
 dist/
 build/
+coverage/
 .temp/
 
 # Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+.vscode/
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -38,3 +39,12 @@ out/
 .nuxt/
 .vuepress/dist
 .serverless/
+
+# Supabase Local Artifacts
+supabase/.temp/
+supabase/.branches/
+supabase/functions/*/node_modules/
+
+# Ensure migrations and config are NOT ignored
+!supabase/migrations/
+!supabase/config.toml

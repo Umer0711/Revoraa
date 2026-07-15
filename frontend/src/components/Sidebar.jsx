@@ -7,12 +7,14 @@ import {
   Target, TrendingUp, Hash, AlertCircle,
   Award, Zap, CheckSquare, Settings, HelpCircle,
   Flame, Bell, User, LogOut, CreditCard, Star,
-  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw
+  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw, Shield
 } from 'lucide-react';
 import { RevoraaLogo } from './RevoraaLogo';
 import { useAuth } from '../contexts/AuthContext';
+import { useCosmetics } from '../contexts/CosmeticContext';
 import { getNotifications, markAllNotificationsRead, getProfileData } from '../lib/dataService';
 import { supabase } from '../lib/supabaseClient';
+import * as Icons from 'lucide-react';
 import './Sidebar.css';
 
 const navMain = [
@@ -35,6 +37,8 @@ const navGamification = [
   { path: '/missions', label: 'Daily Missions', icon: CheckSquare },
   { path: '/shop', label: 'Shop', icon: ShoppingCart },
 ];
+
+const navAdmin = [{ label: 'Admin Panel', icon: Shield, path: '/admin', highlight: true }];
 
 const navTools = [
   { path: '/settings', label: 'Settings', icon: Settings },
@@ -72,7 +76,8 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { signOut, user } = useAuth();
+  const { user, subscriptionData, profile } = useAuth();
+  const { equippedItems } = useCosmetics();
 
   const [notifications, setNotifications] = useState([]);
   const [profileData, setProfileData] = useState(null);
@@ -252,7 +257,7 @@ export function Sidebar() {
     </AnimatePresence>
   );
 
-  const firstName = profileData?.profile?.full_name?.split(' ')?.[0] || user?.email?.split('@')[0] || 'User';
+  const firstName = profile?.full_name?.split(' ')?.[0] || profileData?.profile?.full_name?.split(' ')?.[0] || user?.email?.split('@')[0] || 'User';
   const initial = firstName.charAt(0).toUpperCase();
 
   const sidebarContent = (
@@ -339,8 +344,14 @@ export function Sidebar() {
           <p className="nav-heading">GAMIFICATION</p>
           {navGamification.map(item => <NavItem key={item.path} item={item} />)}
         </div>
+        { (user?.email === 'umer221107@gmai.com' || user?.email === 'umer221107@gmail.com') && (
         <div className="nav-section">
-          <p className="nav-heading">ACCOUNT</p>
+          <p className="nav-heading" style={{ color: 'var(--color-primary)' }}>ADMINISTRATION</p>
+          {navAdmin.map(item => <NavItem key={item.path} item={item} />)}
+        </div>
+      )}
+      <div className="nav-section">
+        <p className="nav-heading">ACCOUNT</p>
           {navTools.map(item => <NavItem key={item.path} item={item} />)}
         </div>
       </nav>
@@ -371,13 +382,25 @@ export function Sidebar() {
                 )}
               </div>
               <div className="user-info">
-                <span className="user-name">{firstName}</span>
+                <span className="user-name" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: equippedItems?.name_colors?.color || 'var(--color-text)' }}>
+                  {equippedItems?.badges && (() => {
+                    const BadgeIcon = Icons[equippedItems.badges.icon_name] || Icons.Award;
+                    return <BadgeIcon size={14} color={equippedItems.badges.color} />;
+                  })()}
+                  {firstName}
+                  {subscriptionData?.status === 'active' && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: 'black', fontSize: '0.5rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.05em' }}>PRO</div>}
+                </span>
                 <div className="user-meta">
                   <span className="user-level">Lvl {Math.floor((profileData?.stats?.xp || 0) / 500) + 1}</span>
                   <span className="user-streak">
                     <Flame size={9} fill="currentColor" /> {profileData?.stats?.current_streak || 0}
                   </span>
                 </div>
+                {equippedItems?.titles && (
+                  <div style={{ fontSize: '0.7rem', color: equippedItems.titles.color || 'var(--color-text-muted)', marginTop: '2px', fontWeight: 500 }}>
+                    {equippedItems.titles.name}
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -418,7 +441,7 @@ export function Sidebar() {
                   className="profile-dropdown-item danger"
                   onClick={async () => { 
                     setProfileOpen(false); 
-                    await signOut();
+                    await supabase.auth.signOut();
                     navigate('/'); 
                   }}
                 >

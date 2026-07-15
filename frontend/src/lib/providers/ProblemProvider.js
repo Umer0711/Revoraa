@@ -21,6 +21,11 @@ export class ProblemProvider {
     if (error) throw error;
     if (!data || !data.success) throw new Error(data?.error?.message || 'Failed to fetch problem metadata');
     
+    // Inject the platform slug if edge function omits it
+    if (!data.data.platform) {
+      data.data.platform = this.platformSlug;
+    }
+    
     return data.data; // The unified problem payload
   }
 }

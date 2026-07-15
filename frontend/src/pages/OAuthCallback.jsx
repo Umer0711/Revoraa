@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { AuthLayout } from '../components/AuthLayout';
 
-export const OAuthSuccess = () => {
+export const OAuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/dashboard');
+      const redirect = localStorage.getItem('oauth_redirect') || '/dashboard';
+      localStorage.removeItem('oauth_redirect');
+      navigate(redirect, { replace: true });
     }, 2000);
     return () => clearTimeout(timer);
   }, [navigate]);

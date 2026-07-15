@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Mail, Code2, GitMerge, CheckCircle2 } from 'lucide-react';
 import { AuthLayout } from '../components/AuthLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { authConfig } from '../lib/config';
+import { SEO } from '../components/SEO';
+
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,11 +20,9 @@ export const Login = () => {
   const redirectUrl = new URLSearchParams(location.search).get('redirect') || '/dashboard';
   const { user } = useAuth();
 
-  React.useEffect(() => {
-    if (user) {
-      navigate(redirectUrl);
-    }
-  }, [user, navigate]);
+  if (user) {
+    return <Navigate to={redirectUrl} replace />;
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,6 +35,7 @@ export const Login = () => {
   };
 
   const handleOAuth = async (provider) => {
+    localStorage.setItem("oauth_redirect", redirectUrl);
     setError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider.toLowerCase(),
@@ -45,6 +46,7 @@ export const Login = () => {
 
   return (
     <AuthLayout>
+      <SEO title="Login" url="https://revoraa.com/login" />
       <div style={{ flex: 1, display: 'flex', width: '100%', minHeight: '100vh' }}>
         
         {/* Left Side - Animated Product Preview */}

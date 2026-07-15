@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, ExternalLink, CheckCircle2, Zap, SkipForward, BookOpen, Loader2, RefreshCw, 
-  Library, CalendarClock, Search, Flame, Grid, List, Circle, BrainCircuit, Book
+  Library, CalendarClock, Search, Flame, Grid, List, BrainCircuit, Book
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { getTodayRevisions, submitRevision, getUserProblems } from '../lib/problemsService';
 import { getRevisionStats } from '../lib/dataService';
+import { SEO } from '../components/SEO';
+
 
 const diffColor = d => d === 'Easy' ? 'var(--color-strong)' : d === 'Medium' ? 'var(--color-revision)' : 'var(--color-weak)';
 
@@ -219,6 +221,7 @@ export function Revision() {
     if (phase === 'complete') {
       return (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ maxWidth: '560px', margin: '6rem auto', textAlign: 'center' }}>
+      <SEO title="Revision Hub" url="https://revoraa.com/revision" />
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏁</div>
           <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '-0.04em' }}>Session Complete!</h2>
           <p className="text-secondary" style={{ marginBottom: '2.5rem' }}>
@@ -394,6 +397,8 @@ export function Revision() {
 
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 1 }}>
                 {p?.problem_tags?.slice(0, 2).map(t => <span key={t.tag} className="badge">{t.tag}</span>)}
+                {p?.problem_companies?.slice(0, 1).map(c => <span key={c.company.name} className="badge" style={{ background: 'var(--color-bg-subtle)' }}>{c.company.name}</span>)}
+                {item.solved_problem?.user_pattern && <span className="badge" style={{ border: '1px dashed var(--color-border-subtle)' }}>{item.solved_problem.user_pattern}</span>}
                 <span className={`badge ${cls}`}>{label} confidence</span>
               </div>
 
@@ -515,6 +520,8 @@ export function Revision() {
 
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 1 }}>
                       {p?.problem_tags?.slice(0, 2).map(t => <span key={t.tag} className="badge">{t.tag}</span>)}
+                      {p?.problem_companies?.slice(0, 1).map(c => <span key={c.company.name} className="badge" style={{ background: 'var(--color-bg-subtle)' }}>{c.company.name}</span>)}
+                      {sp.user_pattern && <span className="badge" style={{ border: '1px dashed var(--color-border-subtle)' }}>{sp.user_pattern}</span>}
                       <span className={`badge ${cls}`}>{label} confidence</span>
                     </div>
 

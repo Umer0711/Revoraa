@@ -10,6 +10,8 @@ import { submitInstantRevision } from '../lib/problemsService';
 import { usePermissions } from '../lib/permissions';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import { SEO } from '../components/SEO';
+
 
 /* Animated number counter */
 function Counter({ from = 0, to, duration = 1.2, delay = 0.3, suffix = '' }) {
@@ -58,10 +60,8 @@ function SkeletonCard({ className }) {
 }
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, subscriptionData, usageData } = useAuth();
   const { refreshKey } = useRealtime();
-  const { isPro, canUseUnlimitedProblems } = usePermissions();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [profile, setProfile] = useState(null);
   const [quickRecallProblem, setQuickRecallProblem] = useState(null);
@@ -194,6 +194,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="dashboard-page">
+      <SEO title="Dashboard" url="https://revoraa.com/dashboard" />
         <div className="bento-grid">
           <SkeletonCard className="col-span-2 row-span-2" />
           <SkeletonCard className="col-span-1 row-span-2" />
@@ -307,6 +308,33 @@ export function Dashboard() {
       </AnimatePresence>
 
       <motion.div className="bento-grid" variants={container} initial="hidden" animate="show">
+        {/* Subscription & Usage Widget */}
+        <motion.div variants={item} className="bento-card col-span-1 md:col-span-1 lg:col-span-1" style={{ position: 'relative', overflow: 'hidden', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '1.25rem' }}>
+          <AccentBar color="var(--color-primary)" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Zap size={14} color="var(--color-primary)"/> {subscriptionData?.status === 'active' ? 'Pro Plan' : 'Free Plan'}
+            </h3>
+            {subscriptionData?.status !== 'active' && (
+              <Link to="/pricing" style={{ fontSize: '0.75rem', color: '#000', background: 'var(--color-primary)', padding: '0.2rem 0.6rem', borderRadius: '1rem', textDecoration: 'none', fontWeight: 600 }}>Upgrade</Link>
+            )}
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginBottom: '0.25rem' }}>
+              <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>
+                {subscriptionData?.status === 'active' ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
+              </span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 500, paddingBottom: '0.2rem' }}>
+                {subscriptionData?.status === 'active' ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
+              </span>
+            </div>
+            {subscriptionData?.status !== 'active' && (
+              <div style={{ width: '100%', height: '6px', background: 'var(--color-bg-light)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(100, ((usageData?.problems_added_this_month || 0) / (usageData?.monthly_problem_limit || 15)) * 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '3px' }} />
+              </div>
+            )}
+          </div>
+        </motion.div>
 
         {/* Today's Mission – Hero */}
         <motion.div

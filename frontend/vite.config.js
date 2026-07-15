@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Revoraa — Interview OS',
+        name: 'Revoraa',
         short_name: 'Revoraa',
         description: 'Track, revise, and master coding interview problems with spaced repetition.',
         theme_color: '#0f0f10',
@@ -38,4 +38,19 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-router-dom') || id.includes('framer-motion')) return 'vendor';
+            if (id.includes('lucide') || id.includes('recharts') || id.includes('canvas-confetti')) return 'ui';
+            if (id.includes('supabase')) return 'supabase';
+            if (id.includes('firebase')) return 'firebase';
+            return 'vendor';
+          }
+        }
+      }
+    }
+  }
 });

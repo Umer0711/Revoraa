@@ -25,6 +25,9 @@ export const RealtimeProvider = ({ children }) => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_achievements', filter: `user_id=eq.${user.id}` }, triggerRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, triggerRefresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'analytics_daily', filter: `user_id=eq.${user.id}` }, triggerRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_pattern_stats', filter: `user_id=eq.${user.id}` }, triggerRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revision_schedule', filter: `user_id=eq.${user.id}` }, triggerRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_inventory', filter: `user_id=eq.${user.id}` }, triggerRefresh)
       .subscribe();
 
     return () => {

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Mail, GitMerge, Code2, ArrowLeft, AlertCircle } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { AuthLayout } from '../components/AuthLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { authConfig } from '../lib/config';
+import { SEO } from '../components/SEO';
+
 
 export const SignUp = () => {
   const [step, setStep] = useState(1);
@@ -18,11 +20,9 @@ export const SignUp = () => {
   const redirectUrl = new URLSearchParams(location.search).get('redirect') || '/dashboard';
   const { user } = useAuth();
 
-  React.useEffect(() => {
-    if (user) {
-      navigate(redirectUrl);
-    }
-  }, [user, navigate]);
+  if (user) {
+    return <Navigate to={redirectUrl} replace />;
+  }
 
   const handleNext = async (e) => {
     e.preventDefault();
@@ -82,6 +82,7 @@ export const SignUp = () => {
   };
 
   const handleOAuth = async (provider) => {
+    localStorage.setItem("oauth_redirect", redirectUrl);
     setError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -103,6 +104,7 @@ export const SignUp = () => {
 
   return (
     <AuthLayout>
+      <SEO title="Sign Up" url="https://revoraa.com/signup" />
       <Toaster position="top-center" />
       <div style={{ flex: 1, display: 'flex', width: '100%', minHeight: '100vh' }}>
         

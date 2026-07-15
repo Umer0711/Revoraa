@@ -117,7 +117,7 @@ export async function getAnalyticsData(userId) {
   });
 
   const topPatterns = (patternStatsRes.data ?? []).map(ps => ({
-    category: ps.pattern_id,
+    category: ps.pattern,
     count: ps.solved_count,
     accuracy: ps.mastery_score
   }));
@@ -142,24 +142,14 @@ export async function getAnalyticsData(userId) {
  * Get profile data (profile + stats + achievements + inventory).
  */
 export async function getProfileData(userId) {
-  const [profileRes, statsRes, achievementsRes, inventoryRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('auth_id', userId).single(),
-    supabase.from('user_stats').select('*').eq('user_id', userId).single(),
-    supabase
-      .from('user_achievements')
-      .select('unlocked_at, achievement:achievements(*)')
-      .eq('user_id', userId),
-    supabase
-      .from('user_inventory')
-      .select('is_equipped, item:shop_items(*)')
-      .eq('user_id', userId),
-  ]);
-
+  const { data, error } = await supabase.rpc('get_dashboard_initialization_data', { p_user_id: userId });
+  if (error) throw error;
+  
   return {
-    profile: profileRes.data ?? {},
-    stats: statsRes.data ?? {},
-    achievements: achievementsRes.data ?? [],
-    inventory: inventoryRes.data ?? [],
+    profile: data.profile ?? {},
+    stats: data.stats ?? {},
+    achievements: data.achievements ?? [],
+    inventory: data.inventory ?? [],
   };
 }
 
@@ -227,11 +217,12 @@ export async function markAllNotificationsRead(userId) {
 }
 
 /**
- * Get shop items with user inventory state.
+ * Get all shop items with user inventory state.
+ * Includes inactive seasonal items (displayed as "Coming Soon").
  */
 export async function getShopData(userId) {
   const [itemsRes, inventoryRes] = await Promise.all([
-    supabase.from('shop_items').select('*').eq('is_active', true),
+    supabase.from('shop_items').select('*').order('sort_order', { ascending: true }),
     supabase.from('user_inventory').select('shop_item_id, is_equipped').eq('user_id', userId),
   ]);
 
@@ -240,26 +231,96 @@ export async function getShopData(userId) {
 
   return (itemsRes.data ?? []).map(item => ({
     ...item,
+    // Normalize: some legacy rows have coin_cost instead of price
+    price: item.price ?? item.coin_cost ?? 0,
+    category: item.category ?? item.type ?? 'badges',
     owned: owned.has(item.id),
     equipped: equipped.has(item.id),
   }));
 }
 
 /**
- * Purchase a shop item using coins.
+ * Purchase a shop item using coins (fully server-validated).
  */
-export async function purchaseShopItem(userId, itemId, coinCost) {
-  // Check coins via RPC
-  const { data: stats } = await supabase.from('user_stats').select('coins').eq('user_id', userId).single();
-  if ((stats?.coins ?? 0) < coinCost) throw new Error('Insufficient coins.');
-
-  // Deduct coins & add to inventory in a transaction via RPC
-  const { error } = await supabase.rpc('purchase_shop_item', {
+export async function purchaseShopItem(userId, itemId) {
+  const { data, error } = await supabase.rpc('purchase_shop_item', {
     p_user_id: userId,
     p_item_id: itemId,
-    p_coin_cost: coinCost,
+    p_coin_cost: 0, // Ignored by new RPC — price comes from DB
+  });
+  if (error) {
+    // Parse structured errors from the RPC
+    const msg = error.message || '';
+    if (msg.includes('INSUFFICIENT_COINS')) throw new Error('Not enough coins.');
+    if (msg.includes('ALREADY_OWNED')) throw new Error('You already own this item.');
+    if (msg.includes('ITEM_NOT_AVAILABLE')) throw new Error('This item is not available.');
+    throw error;
+  }
+  return data;
+}
+
+/**
+ * Equip a shop item (one per category — auto-unequips previous).
+ */
+export async function equipShopItem(userId, itemId) {
+  const { data, error } = await supabase.rpc('equip_shop_item', {
+    p_user_id: userId,
+    p_item_id: itemId,
   });
   if (error) throw error;
+  return data;
+}
+
+/**
+ * Unequip a shop item.
+ */
+export async function unequipShopItem(userId, itemId) {
+  const { data, error } = await supabase.rpc('unequip_shop_item', {
+    p_user_id: userId,
+    p_item_id: itemId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get all equipped items for a user (used globally by CosmeticContext).
+ */
+export async function getEquippedItems(userId) {
+  const { data, error } = await supabase
+    .from('user_inventory')
+    .select('shop_item_id, shop_items(id, name, category, color, icon_name, rarity)')
+    .eq('user_id', userId)
+    .eq('is_equipped', true);
+
+  if (error) throw error;
+  // Return as a map keyed by category for easy access
+  const equipped = {};
+  (data ?? []).forEach(inv => {
+    const item = inv.shop_items;
+    if (item) {
+      equipped[item.category] = item;
+    }
+  });
+  return equipped;
+}
+
+/**
+ * Get user's full inventory (all owned items).
+ */
+export async function getUserInventory(userId) {
+  const { data, error } = await supabase
+    .from('user_inventory')
+    .select('shop_item_id, is_equipped, purchased_at, shop_items(*)')
+    .eq('user_id', userId)
+    .order('purchased_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(inv => ({
+    ...inv.shop_items,
+    is_equipped: inv.is_equipped,
+    purchased_at: inv.purchased_at,
+  }));
 }
 
 /**

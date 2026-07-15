@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Code, Briefcase, Globe, Award, Target, Zap, Settings, Loader2, Lock } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useCosmetics } from '../contexts/CosmeticContext';
 import { getProfileData } from '../lib/dataService';
+import { SEO } from '../components/SEO';
+
 
 const container = {
   hidden: { opacity: 0 },
@@ -27,7 +31,8 @@ function StatItem({ label, value, suffix }) {
 }
 
 export function Profile() {
-  const { user } = useAuth();
+  const { user, subscriptionData } = useAuth();
+  const { equippedItems } = useCosmetics();
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
@@ -50,6 +55,7 @@ export function Profile() {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem' }}>
+      <SEO title="Profile" url="https://revoraa.com/profile" />
         <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', color: 'var(--color-primary)' }} />
         <p className="text-secondary">Loading profile…</p>
       </div>
@@ -88,17 +94,65 @@ export function Profile() {
         <motion.div variants={item} className="bento-card col-span-2 row-span-2 liquid-glass" style={{ display: 'flex', flexDirection: 'column', padding: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={firstName} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 600, color: '#fff' }}>
-                  {initial}
+              <div style={{ position: 'relative' }}>
+                <div style={{ 
+                  borderRadius: '50%',
+                  padding: equippedItems?.profile_frames ? '4px' : '0',
+                  background: equippedItems?.profile_frames ? `linear-gradient(135deg, ${equippedItems.profile_frames.color}, transparent)` : 'transparent',
+                  boxShadow: equippedItems?.profile_frames ? `0 0 15px ${equippedItems.profile_frames.color}66` : 'none'
+                }}>
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt={firstName} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 600, color: '#fff' }}>
+                      {initial}
+                    </div>
+                  )}
                 </div>
-              )}
+                
+                {/* Decoration */}
+                {equippedItems?.decorations && (() => {
+                  const DecIcon = Icons[equippedItems.decorations.icon_name] || Icons.Sparkles;
+                  return (
+                    <div style={{
+                      position: 'absolute',
+                      top: -15,
+                      right: -10,
+                      background: `color-mix(in srgb, ${equippedItems.decorations.color} 20%, var(--color-bg-base))`,
+                      padding: '0.4rem',
+                      borderRadius: '50%',
+                      border: `1px solid ${equippedItems.decorations.color}`,
+                      boxShadow: `0 0 10px ${equippedItems.decorations.color}40`,
+                      zIndex: 10
+                    }}>
+                      <DecIcon size={18} color={equippedItems.decorations.color} />
+                    </div>
+                  );
+                })()}
+              </div>
+              
               <div>
-                <h2 style={{ fontSize: '2rem', marginBottom: 0 }}>{profile.full_name ?? firstName}</h2>
-                <p className="text-secondary">@{profile.username ?? 'username'}</p>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <h2 style={{ fontSize: '2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: equippedItems?.name_colors?.color || 'var(--color-text)' }}>
+                  {equippedItems?.badges && (() => {
+                    const BadgeIcon = Icons[equippedItems.badges.icon_name] || Icons.Award;
+                    return <BadgeIcon size={24} color={equippedItems.badges.color} />;
+                  })()}
+                  {profile.full_name ?? firstName}
+                  {subscriptionData?.status === 'active' && (
+                    <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: 'rgba(255,171,0,0.1)', color: 'var(--color-primary)', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 700 }}>
+                      <Zap size={14} /> PRO
+                    </span>
+                  )}
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
+                  <p className="text-secondary" style={{ margin: 0 }}>@{profile.username ?? 'username'}</p>
+                  {equippedItems?.titles && (
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: equippedItems.titles.color || 'var(--color-primary)', background: `color-mix(in srgb, ${equippedItems.titles.color || 'var(--color-primary)'} 15%, transparent)`, padding: '0.1rem 0.6rem', borderRadius: '1rem' }}>
+                      {equippedItems.titles.name}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                   <span className="badge">Lvl {stats.level ?? 1}</span>
                   <span className="badge" style={{ color: 'var(--color-xp)', borderColor: 'var(--color-xp)33' }}>
                     {stats.xp ?? 0} XP
@@ -145,7 +199,7 @@ export function Profile() {
           <StatItem label="Streak"    value={stats.current_streak ?? 0} suffix="days" />
           <StatItem label="XP Total"  value={stats.xp ?? 0} />
           <StatItem label="Level"     value={stats.level ?? 1} />
-          <StatItem label="Coins"     value={stats.coins ?? 0} />
+          <StatItem label="Coins"     value={profile.coins_balance ?? 0} />
         </motion.div>
 
         {/* XP Progress */}

@@ -155,18 +155,40 @@ export async function upsertProblem(problemData) {
     .from('problems')
     .upsert({
       title: problemData.title || 'Manual Entry',
-      slug: problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `manual-${Date.now()}`,
+      slug: problemData.slug || problemData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || `manual-${Date.now()}`,
       difficulty: problemData.difficulty || 'Medium',
       url: problemData.url || '',
       external_problem_id: problemData.externalId || '',
       platform_id: platformId,
-    }, { onConflict: 'slug' })
+    }, { onConflict: 'platform_id,slug' })  // Matches the actual unique constraint: unique(platform_id, slug)
     .select()
     .single();
 
   if (error) throw error;
 
-  // Insert tags if needed (omitted for brevity, could be added later)
+  // Insert tags if provided
+  if (problemData.tags && problemData.tags.length > 0) {
+    const tagsToInsert = problemData.tags.map(t => ({ problem_id: data.id, tag: t }));
+    await supabase.from('problem_tags').upsert(tagsToInsert, { onConflict: 'problem_id,tag' });
+  }
+
+  // Insert companies if provided
+  if (problemData.companies && problemData.companies.length > 0) {
+    // We must first ensure companies exist in the companies table, then link them
+    for (const cName of problemData.companies) {
+      const { data: comp } = await supabase
+        .from('companies')
+        .upsert({ name: cName }, { onConflict: 'name' })
+        .select()
+        .single();
+      
+      if (comp) {
+        await supabase
+          .from('problem_companies')
+          .upsert({ problem_id: data.id, company_id: comp.id }, { onConflict: 'problem_id,company_id' });
+      }
+    }
+  }
 
   return data;
 }
@@ -175,12 +197,28 @@ export async function saveSolvedProblem({ problemData, problemId, solveTimeMinut
   let finalProblemId = problemId;
 
   // If no problemId but problemData is provided, upsert it first
+  // This only affects the global problems cache — NOT user-specific data
   if (!finalProblemId && problemData) {
     const p = await upsertProblem(problemData);
     finalProblemId = p.id;
   }
 
-  // 1. Upsert solved_problems row
+  // 1. USER-SCOPED DUPLICATE CHECK: Check only within this user's own library
+  //    This is intentionally scoped to (user_id + problem_id) so different users
+  //    can independently add the same problem without conflict.
+  const { data: existing } = await supabase
+    .from('solved_problems')
+    .select('id, deleted_at')
+    .eq('user_id', userId)
+    .eq('problem_id', finalProblemId)
+    .maybeSingle();
+
+  if (existing && !existing.deleted_at) {
+    // This specific user already has this problem in their library
+    throw new Error('USER_ALREADY_HAS_PROBLEM');
+  }
+
+  // 2. Insert (or restore if soft-deleted) the solved_problems row
   const { data: solved, error: solveErr } = await supabase
     .from('solved_problems')
     .upsert({
@@ -194,13 +232,14 @@ export async function saveSolvedProblem({ problemData, problemId, solveTimeMinut
       user_pattern: userPattern,
       status: 'revising',
       first_solved_at: new Date().toISOString(),
+      deleted_at: null,  // Restore if previously soft-deleted
     }, { onConflict: 'user_id,problem_id', ignoreDuplicates: false })
     .select()
     .single();
 
   if (solveErr) throw solveErr;
 
-  // 2. Schedule first revision for tomorrow
+  // 3. Schedule first revision — insert; non-fatal if it fails (e.g., edge case re-adds)
   const { error: revErr } = await supabase
     .from('revision_schedule')
     .insert({
@@ -212,12 +251,12 @@ export async function saveSolvedProblem({ problemData, problemId, solveTimeMinut
       ease_factor: 2.5,
     });
 
-  if (revErr) throw revErr;
+  if (revErr) console.error('Revision schedule insert error (non-fatal):', revErr.message);
 
-  // 3. Update user stats
+  // 4. Update user stats
   await supabase.rpc('increment_user_stat', { p_user_id: userId, p_column: 'total_solved', p_amount: 1 });
 
-  // 4. Trigger the centralized Event Orchestrator
+  // 5. Trigger the centralized Event Orchestrator
   const xpEarned = solvedUsing === 'myself' ? 50 : solvedUsing === 'hint' ? 30 : 15;
   // Fire and forget (don't block the UI return)
   onProblemAdded(userId, solved.id, solvedUsing, xpEarned).catch(err => console.error('Orchestrator Error:', err));
@@ -232,7 +271,7 @@ export async function getUserProblems(userId, { query = '', difficulty = 'All', 
   let q = supabase
     .from('solved_problems')
     .select(`
-      id, status, confidence, solve_time_minutes, first_solved_at, last_revised_at, notes, mistakes,
+      id, status, confidence, solve_time_minutes, first_solved_at, last_revised_at, notes, mistakes, user_pattern,
       revision_count, average_time, best_time,
       problem:problems(id, title, slug, difficulty, url, external_problem_id,
         coding_platforms(name),
@@ -275,9 +314,9 @@ export async function getTodayRevisions(userId) {
     .from('revision_schedule')
     .select(`
       id, revision_number, next_revision_date, interval_days, ease_factor,
-      solved_problem!inner(
-        id, confidence, notes, status,
-        problem:problems(id, title, slug, difficulty, url)
+      solved_problem:solved_problems!inner(
+        id, confidence, notes, status, user_pattern,
+        problem:problems(id, title, slug, difficulty, url, external_problem_id, problem_tags(tag), problem_companies(company:companies(name)), coding_platforms(name, color_hex))
       )
     `)
     .eq('user_id', userId)
@@ -351,7 +390,7 @@ export async function getSolvedProblemById(solvedProblemId) {
   const { data, error } = await supabase
     .from('solved_problems')
     .select(`
-      id, status, confidence, solve_time_minutes, first_solved_at, last_revised_at, notes, mistakes, user_id, problem_id,
+      id, status, confidence, solve_time_minutes, first_solved_at, last_revised_at, notes, mistakes, user_pattern, user_id, problem_id,
       problem:problems(id, title, slug, difficulty, url, external_problem_id,
         coding_platforms(name),
         problem_tags(tag),
@@ -370,30 +409,42 @@ export async function getSolvedProblemById(solvedProblemId) {
     data.revision_history.sort((a, b) => new Date(b.revision_date) - new Date(a.revision_date));
   }
 
+  
   // Fetch revision attempts separately since it relates to user_id and problem_id directly
-  try {
-    const { data: attempts } = await supabase
-      .from('revision_attempts')
-      .select('id, attempt_type, time_taken, confidence, result, created_at')
-      .eq('problem_id', data.problem_id)
-      .eq('user_id', data.user_id)
-      .order('created_at', { ascending: true });
-    data.revision_attempts = attempts || [];
-  } catch(e) {
-    console.error("Failed to fetch revision attempts", e);
+  if (data.problem_id) {
+    try {
+      const { data: attempts } = await supabase
+        .from('revision_attempts')
+        .select('id, attempt_type, time_taken, confidence, result, created_at')
+        .eq('problem_id', data.problem_id)
+        .eq('user_id', data.user_id)
+        .order('created_at', { ascending: true });
+      data.revision_attempts = attempts || [];
+    } catch(e) {
+      console.error("Failed to fetch revision attempts", e);
+      data.revision_attempts = [];
+    }
+  } else {
     data.revision_attempts = [];
   }
 
+
+  
   // Also fetch stats from RPC
-  try {
-    const { data: stats } = await supabase.rpc('get_problem_stats', {
-      p_user_id: data.user_id,
-      p_problem_id: data.problem_id
-    });
-    data.stats = stats?.[0] || null;
-  } catch(e) {
-    console.error("Failed to fetch problem stats", e);
+  if (data.problem_id) {
+    try {
+      const { data: stats } = await supabase.rpc('get_problem_stats', {
+        p_user_id: data.user_id,
+        p_problem_id: data.problem_id
+      });
+      data.stats = stats?.[0] || null;
+    } catch(e) {
+      console.error("Failed to fetch problem stats", e);
+    }
+  } else {
+    data.stats = null;
   }
+
 
   return data;
 }

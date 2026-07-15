@@ -6,6 +6,8 @@ import { getRoadmapData } from '../lib/dataService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { useRealtime } from '../contexts/RealtimeContext';
+import { SEO } from '../components/SEO';
+
 
 // Fallback placeholder since roadmaps aren't fully dynamic yet (before migration)
 const fallbackPhases = [
@@ -164,6 +166,7 @@ function RoadmapCard({ label, topics, pct, isDone, isActive, isLocked, isUnlocke
       className={`bento-card ${justCompleted || justUnlocked ? 'clay-card' : ''}`}
       style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', position: 'relative', overflow: 'hidden' }}
     >
+      <SEO title="Roadmap" url="https://revoraa.com/roadmap" />
       <AccentBar color={accent} />
       
       {justCompleted && (

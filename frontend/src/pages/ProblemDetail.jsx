@@ -179,7 +179,7 @@ export function ProblemDetail() {
     );
   }
 
-  const p = problem.problem;
+  const p = problem.problem || {};
   const tags = p.problem_tags?.map(t => t.tag).join(', ') || 'No Pattern';
   const company = p.problem_companies?.[0]?.company?.name || 'No Company';
   const platform = p.coding_platforms;
@@ -217,13 +217,14 @@ export function ProblemDetail() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.625rem' }}>
               <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>#{p.external_problem_id || '—'}</span>
-              <span style={{ fontSize: '0.78rem', fontWeight: 650, color: diffColor(p.difficulty), letterSpacing: '0.02em' }}>{p.difficulty}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 650, color: diffColor(p.difficulty), letterSpacing: '0.02em' }}>{p.difficulty || 'Unknown'}</span>
               {problem.status === 'mastered' && <CheckCircle2 size={15} color="var(--color-strong)" />}
             </div>
             <h1 style={{ fontSize: '1.75rem', marginBottom: '0.75rem' }}>{p.title}</h1>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span className="badge">{tags}</span>
-              <span className="badge">{company}</span>
+              {p.problem_tags?.map(t => <span key={t.tag} className="badge">{t.tag}</span>)}
+              {p.problem_companies?.map(c => <span key={c.company.name} className="badge" style={{ background: 'var(--color-bg-subtle)' }}>{c.company.name}</span>)}
+              {problem.user_pattern && <span className="badge" style={{ border: '1px dashed var(--color-border-subtle)' }}>{problem.user_pattern}</span>}
               {platform ? (
                 <span className="badge" style={{ border: `1px solid ${platform.color_hex || 'var(--color-primary)'}`, color: platform.color_hex || 'inherit' }}>
                   {platform.name}

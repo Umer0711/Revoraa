@@ -5,6 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserProblems } from '../lib/problemsService';
 import './ProblemLibrary.css';
+import { SEO } from '../components/SEO';
+
 
 const diffColor = d => d === 'Easy' ? 'var(--color-strong)' : d === 'Medium' ? 'var(--color-revision)' : 'var(--color-weak)';
 const confBadge = c => c >= 4 ? { cls: 'badge-success', label: 'High' } : c === 3 ? { cls: 'badge-warning', label: 'Med' } : { cls: 'badge-danger', label: 'Low' };
@@ -104,6 +106,7 @@ export function ProblemLibrary() {
 
   return (
     <div className="library-page">
+      <SEO title="Problem Library" url="https://revoraa.com/library" />
       {/* Sticky header */}
       <header className="page-header" style={{ position: 'sticky', top: 0, zIndex: 20, margin: '0 -3.5rem 2.5rem', padding: '1.5rem 3.5rem', background: 'var(--color-bg-overlay)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--color-border-subtle)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -215,7 +218,7 @@ export function ProblemLibrary() {
                   [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
                 ) : sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       <EmptyState />
                     </td>
                   </tr>
@@ -238,20 +241,20 @@ export function ProblemLibrary() {
                           : <Circle size={15} color="var(--color-text-muted)" />
                         }
                       </td>
-                      <td style={{ color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>{p?.external_problem_id ?? '—'}</td>
-                      <td style={{ fontWeight: 550, color: 'var(--color-text-primary)' }}>{p?.title ?? '—'}</td>
+                      <td style={{ color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>{p?.external_problem_id}</td>
+                      <td style={{ fontWeight: 550, color: 'var(--color-text-primary)' }}>{p?.title}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                           {tags.map(t => <span key={t.tag} className="badge">{t.tag}</span>)}
-                          {tags.length === 0 && <span className="text-muted text-xs">—</span>}
                         </div>
                       </td>
-                      <td><span style={{ color: diffColor(p?.difficulty), fontWeight: 550, fontSize: '0.85rem' }}>{p?.difficulty ?? '—'}</span></td>
+                      <td style={{ color: diffColor(p?.difficulty), fontWeight: 500 }}>
+                        {p?.difficulty || 'Medium'}
+                      </td>
                       <td>
-                        {companies.length > 0
-                          ? <span className="badge">{companies[0].company?.name}</span>
-                          : <span className="text-muted text-xs">—</span>
-                        }
+                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                          {companies.map(c => <span key={c.company.name} className="badge" style={{ background: 'var(--color-bg-subtle)' }}>{c.company.name}</span>)}
+                        </div>
                       </td>
                       <td>
                         {p?.coding_platforms ? (
@@ -323,6 +326,8 @@ export function ProblemLibrary() {
 
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {p?.problem_tags?.slice(0, 2).map(t => <span key={t.tag} className="badge">{t.tag}</span>)}
+                    {p?.problem_companies?.slice(0, 1).map(c => <span key={c.company.name} className="badge" style={{ background: 'var(--color-bg-subtle)' }}>{c.company.name}</span>)}
+                    {sp.user_pattern && <span className="badge" style={{ border: '1px dashed var(--color-border-subtle)' }}>{sp.user_pattern}</span>}
                     <span className={`badge ${cls}`}>{label} confidence</span>
                   </div>
 

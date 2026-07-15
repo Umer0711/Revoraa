@@ -4,6 +4,8 @@ import { AccentBar } from '../components/ui/AccentBar';
 import { getAllAchievementsData } from '../lib/dataService';
 import { useAuth } from '../contexts/AuthContext';
 import { useRealtime } from '../contexts/RealtimeContext';
+import { SEO } from '../components/SEO';
+
 
 export const Achievements = () => {
   const { user } = useAuth();
@@ -39,6 +41,7 @@ export const Achievements = () => {
 
   return (
     <div>
+      <SEO title="Achievements" url="https://revoraa.com/achievements" />
       <header className="page-header">
         <h1>Achievements</h1>
         <p className="text-secondary">

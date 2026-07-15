@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  CreditCard, motion } from 'framer-motion';
+  motion } from 'framer-motion';
 import {
-  User, Palette, Bell, Shield, Lock, Download, Keyboard, Link as LinkIcon,
+  User, Palette, Bell, Shield, Lock, Download, Keyboard, Link as LinkIcon, CreditCard,
   AlertTriangle, ChevronRight, Monitor, Moon, Sun, Key, Loader2, Check, LogOut
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,12 +11,31 @@ import { getProfileData, updateProfile, getUserSettings, updateUserSettings } fr
 import { supabase } from '../lib/supabaseClient';
 import { authConfig } from '../lib/config';
 import { useNavigate } from 'react-router-dom';
+import { SEO } from '../components/SEO';
+
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 15, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 220, damping: 24 } } };
 
-const SettingCard = ({ icon: Icon, title, desc, colSpan = 1, children, color = 'var(--color-primary)', danger = false }) => (
-  <motion.div variants={item} className={`bento-card col-span-${colSpan}`} style={{ display: 'flex', flexDirection: 'column', borderColor: danger ? 'var(--color-mistakes)' : undefined, background: danger ? 'rgba(239,68,68,0.03)' : undefined }}>
+
+const LockOverlay = ({ title }) => (
+  <div style={{
+    position: 'absolute', inset: 0, 
+    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 'inherit', zIndex: 10, color: 'white', textAlign: 'center', padding: '1rem'
+  }}>
+    <Lock size={24} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
+    <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{title}</p>
+    <a href="/pricing" className="btn btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.75rem', textDecoration: 'none' }}>Upgrade to Pro</a>
+  </div>
+);
+
+const SettingCard = ({ icon: Icon, title, desc, colSpan = 1, children, color = 'var(--color-primary)', danger = false, locked = false }) => (
+  <motion.div variants={item} className={`bento-card col-span-${colSpan}`} style={{ position: 'relative', display: 'flex', flexDirection: 'column', borderColor: danger ? 'var(--color-mistakes)' : undefined, background: danger ? 'rgba(239,68,68,0.03)' : undefined }}>
+    {locked && <LockOverlay title={`${title} is a Premium Feature`} />}
+
+  
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: children ? '1.5rem' : 0 }}>
       <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: `color-mix(in srgb, ${danger ? 'var(--color-mistakes)' : color} 15%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
         <Icon size={20} color={danger ? 'var(--color-mistakes)' : color} />
@@ -52,7 +71,7 @@ function Toggle({ checked, onChange }) {
 }
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user, subscriptionData } = useAuth();
   const navigate = useNavigate();
   const { isPro, isProPlus } = usePermissions();
 
@@ -148,7 +167,7 @@ export function Settings() {
     const confirmed = window.confirm('Are you absolutely sure? This cannot be undone.');
     if (!confirmed) return;
     // In production this should call a Supabase Edge Function to fully delete user data
-    alert('Account deletion is handled securely via backend. Please contact support@revoraa.com.');
+    alert('Account deletion is handled securely via backend. Please contact support@revoraa.co.in.');
   };
 
   const handleExport = async () => {
@@ -181,6 +200,7 @@ export function Settings() {
 
   return (
     <div style={{ paddingBottom: '4rem' }}>
+      <SEO title="Settings" url="https://revoraa.com/settings" />
       <header className="page-header">
         <h1>Settings</h1>
         <p className="text-secondary">Manage your preferences, account details, and integrations.</p>
@@ -262,7 +282,7 @@ export function Settings() {
           </SettingCard>
 
           {/* Appearance */}
-          <SettingCard icon={Palette} title="Appearance" desc="Customize your UI theme and colors." colSpan={2} color="var(--color-readiness)">
+          <SettingCard icon={Palette} title="Appearance" desc="Customize your UI theme and colors." colSpan={2} color="var(--color-readiness)" locked={!isPro}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
               {[{ icon: Monitor, label: 'System', val: 'system' }, { icon: Moon, label: 'Dark', val: 'dark' }, { icon: Sun, label: 'Light', val: 'light' }].map((t) => {
                 const isActive = theme === t.val;
@@ -317,23 +337,24 @@ export function Settings() {
           </SettingCard>
 
           
+          
           {/* Billing & Subscription */}
           <SettingCard icon={CreditCard} title="Subscription & Billing" desc="Manage your subscription plan and billing details." color="var(--color-primary)">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ padding: '1rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem', color: isPro ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
-                    {profile?.role === 'pro_yearly' ? 'Pro Yearly' : profile?.role === 'pro_monthly' ? 'Pro Monthly' : 'Free Plan'}
+                    {subscriptionData?.plan_id ? (subscriptionData.plan_id.includes('Yearly') ? 'Pro Yearly' : 'Pro Monthly') : 'Free Plan'}
                   </h4>
-                  <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(profile?.subscription_renewal_date).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
+                  <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(subscriptionData?.current_period_end).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
                 </div>
                 {!isPro && (
-                  <button onClick={() => window.location.href = '/pricing'} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                  <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
                     Upgrade to Pro
                   </button>
                 )}
                 {isPro && (
-                  <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => alert('Manage Subscription portal coming soon')}>
+                  <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/pricing')}>
                     Manage Billing
                   </button>
                 )}
@@ -375,7 +396,7 @@ export function Settings() {
           </SettingCard>
 
           {/* Data Export */}
-          <SettingCard icon={Shield} title="Data Export" desc="Download all your problems and notes as CSV." color="var(--color-xp)">
+          <SettingCard icon={Shield} title="Data Export" desc="Download all your problems and notes as CSV." color="var(--color-xp)" locked={!isPro}>
             <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleExport}>
               Export Problems CSV
             </button>

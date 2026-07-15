@@ -113,6 +113,47 @@ function buildTemplate(type: string, payload: any): { subject: string, html: str
       `;
       break;
 
+    
+    case 'payment_success':
+      subject = '🎉 Payment Successful - Welcome to Revoraa Pro!';
+      html = `
+        <div style="${style}">
+          <h2 style="margin: 0 0 1rem; font-size: 1.5rem;">Payment Successful! 🎉</h2>
+          <p style="color: #9ca3af; margin: 0 0 1rem;">Thank you for upgrading to Pro. Your subscription is now active.</p>
+          <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            <p style="margin: 0 0 0.5rem; color: #fff;"><strong>Plan:</strong> ${payload.plan_name}</p>
+            <p style="margin: 0 0 0.5rem; color: #fff;"><strong>Amount:</strong> ${payload.amount} ${payload.currency}</p>
+            <p style="margin: 0; color: #fff;"><strong>Order ID:</strong> ${payload.order_id}</p>
+          </div>
+          <a href="https://revoraa.co.in/dashboard" style="display: inline-block; padding: 0.75rem 1.5rem; background: #f59e0b; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard →</a>
+        </div>
+      `;
+      break;
+
+    case 'payment_failed':
+      subject = '⚠️ Action Required: Payment Failed';
+      html = `
+        <div style="${style}">
+          <h2 style="margin: 0 0 1rem; font-size: 1.5rem; color: #ef4444;">Payment Failed</h2>
+          <p style="color: #9ca3af; margin: 0 0 1rem;">We were unable to process your recent payment for Revoraa Pro.</p>
+          <p style="color: #9ca3af; margin: 0 0 2rem;">Please update your payment method to avoid any interruption to your premium features.</p>
+          <a href="https://revoraa.co.in/pricing" style="display: inline-block; padding: 0.75rem 1.5rem; background: #ef4444; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600;">Update Payment Method</a>
+        </div>
+      `;
+      break;
+
+    case 'subscription_cancelled':
+      subject = 'Your Subscription has been Cancelled';
+      html = `
+        <div style="${style}">
+          <h2 style="margin: 0 0 1rem; font-size: 1.5rem;">Subscription Cancelled</h2>
+          <p style="color: #9ca3af; margin: 0 0 1rem;">Your Revoraa Pro subscription has been cancelled.</p>
+          <p style="color: #9ca3af; margin: 0 0 2rem;">You will continue to have access to Pro features until the end of your current billing period (${payload.end_date}). We're sorry to see you go!</p>
+          <a href="https://revoraa.co.in/pricing" style="display: inline-block; padding: 0.75rem 1.5rem; background: #374151; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600;">Renew Subscription</a>
+        </div>
+      `;
+      break;
+
     default:
       throw new Error('Unknown email type');
   }

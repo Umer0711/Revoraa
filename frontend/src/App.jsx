@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
 import { ProtectedRoute } from './contexts/ProtectedRoute';
 import { CheckCircle2, Circle, Lock } from 'lucide-react';
@@ -27,6 +27,8 @@ const Achievements    = lazy(() => import('./pages/Achievements').then(module =>
 const Levels          = lazy(() => import('./pages/Levels').then(module => ({ default: module.Levels })));
 const Missions        = lazy(() => import('./pages/Missions').then(module => ({ default: module.Missions })));
 const Support         = lazy(() => import('./pages/Support').then(module => ({ default: module.Support })));
+const Pricing         = lazy(() => import('./pages/Pricing').then(module => ({ default: module.Pricing })));
+const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 
 // ─── Auth & Public Pages ──────────────────────────────────────────────────────
 const Landing         = lazy(() => import('./pages/Landing').then(module => ({ default: module.Landing })));
@@ -36,7 +38,7 @@ const ForgotPassword  = lazy(() => import('./pages/ForgotPassword').then(module 
 const ResetPassword   = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })));
 const Onboarding      = lazy(() => import('./pages/Onboarding').then(module => ({ default: module.Onboarding })));
 const OAuthLoading    = lazy(() => import('./pages/OAuthLoading').then(module => ({ default: module.OAuthLoading })));
-const OAuthSuccess    = lazy(() => import('./pages/OAuthSuccess').then(module => ({ default: module.OAuthSuccess })));
+const OAuthCallback   = lazy(() => import('./pages/OAuthCallback').then(module => ({ default: module.OAuthCallback })));
 const OAuthFailed     = lazy(() => import('./pages/OAuthFailed').then(module => ({ default: module.OAuthFailed })));
 
 // ─── Page Transition Wrapper ─────────────────────────────────────────────────
@@ -59,6 +61,14 @@ const AccentBar = ({ color }) => (
     height: '1px', background: `linear-gradient(to right, transparent, ${color}, transparent)`, opacity: 0.55,
   }} />
 );
+
+// ─── Admin Route ─────────────────────────────────────────────────────────────
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (!user || (user.email !== 'umer221107@gmai.com' && user.email !== 'umer221107@gmail.com')) return <Navigate to="/dashboard" replace />;
+  return children;
+};
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 const NotFound = () => (
@@ -88,7 +98,7 @@ const PageLoader = () => (
 
 const AnimatedRoutes = () => {
   const location = useLocation();
-  const isAuthRoute = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/onboarding', '/auth/loading', '/auth/success', '/auth/error'].includes(location.pathname);
+  const isAuthRoute = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/onboarding', '/auth/loading', '/auth/callback', '/auth/error'].includes(location.pathname);
 
   const content = (
     <AnimatePresence mode="wait">
@@ -102,7 +112,7 @@ const AnimatedRoutes = () => {
           <Route path="/reset-password"  element={<PageWrapper><ResetPassword /></PageWrapper>} />
           <Route path="/onboarding"    element={<PageWrapper><Onboarding /></PageWrapper>} />
           <Route path="/auth/loading"  element={<PageWrapper><OAuthLoading /></PageWrapper>} />
-          <Route path="/auth/success"  element={<PageWrapper><OAuthSuccess /></PageWrapper>} />
+          <Route path="/auth/callback" element={<PageWrapper><OAuthCallback /></PageWrapper>} />
           <Route path="/auth/error"    element={<PageWrapper><OAuthFailed /></PageWrapper>} />
 
           {/* Dashboard Routes */}
@@ -124,6 +134,8 @@ const AnimatedRoutes = () => {
           <Route path="/missions"      element={<ProtectedRoute><PageWrapper><Missions /></PageWrapper></ProtectedRoute>} />
           <Route path="/settings"      element={<ProtectedRoute><PageWrapper><Settings /></PageWrapper></ProtectedRoute>} />
           <Route path="/support"       element={<ProtectedRoute><PageWrapper><Support /></PageWrapper></ProtectedRoute>} />
+          <Route path="/pricing"       element={<ProtectedRoute><PageWrapper><Pricing /></PageWrapper></ProtectedRoute>} />
+          <Route path="/admin"         element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
           <Route path="*"              element={<NotFound />} />
         </Routes>
       </Suspense>

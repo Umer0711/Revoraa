@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Link2, Search, ArrowRight, ArrowLeft, Check, Zap, CalendarClock, Trophy, AlertCircle, Loader2, Plus, X, Trash2 } from 'lucide-react';
+import { Link2, Search, ArrowRight, ArrowLeft, Check, Zap, CalendarClock, AlertCircle, Loader2, Plus, X, Trash2, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveSolvedProblem, detectPatternFromTags } from '../lib/problemsService';
 import { resolveProblemMetadata } from '../lib/providers';
@@ -29,10 +29,15 @@ const slideVariants = {
 };
 
 export function AddProblem() {
-  const { user, profile } = useAuth();
+  const { user, profile, subscriptionData, usageData } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
+
+  const isPremium = subscriptionData?.status === 'active';
+  const usageCurrent = usageData?.problems_added_this_month || 0;
+  const usageLimit = usageData?.monthly_problem_limit || 15;
+  const limitReached = !isPremium && usageCurrent >= usageLimit;
 
   // Form State
   const [url, setUrl] = useState('');
@@ -126,7 +131,7 @@ export function AddProblem() {
       setXpEarned(xp);
       const solved = await saveSolvedProblem({
         problemId: fetchedProblem.id,
-        problemData: fetchedProblem.isManual ? fetchedProblem : null,
+        problemData: fetchedProblem,
         solveTimeMinutes: solveTime ? Number(solveTime) : null,
         solvedUsing: solveMethod,
         confidence,
@@ -140,12 +145,12 @@ export function AddProblem() {
       setIsSuccess(true);
       // Removed the setTimeout auto-navigate here for Instant Revision flow
     } catch (err) {
-      if (err.message.includes('FREE_LIMIT_EXCEEDED')) {
+      if (err.message === 'FREE_LIMIT_EXCEEDED' || err.message.includes('FREE_LIMIT_EXCEEDED')) {
         setSaveError('FREE_LIMIT_EXCEEDED');
+      } else if (err.message === 'USER_ALREADY_HAS_PROBLEM') {
+        setSaveError('You have already added this problem to your library. Visit the Problem Library to update or review it.');
       } else {
-        setSaveError(err.message.includes('duplicate') || err.message.includes('unique')
-          ? 'You have already added this problem. Visit the library to update it.'
-          : err.message);
+        setSaveError(err.message || 'An error occurred while saving. Please try again.');
       }
     } finally {
       setSaveLoading(false);
@@ -157,7 +162,22 @@ export function AddProblem() {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '4rem', paddingBottom: '4rem' }}>
 
-      {!isSuccess && (
+      {limitReached ? (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bento-card clay-card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255, 171, 0, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+            <Lock size={40} />
+          </div>
+          <h2 style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Free Limit Reached</h2>
+          <p className="text-secondary" style={{ marginBottom: '2rem' }}>
+            You've tracked {usageLimit} problems this month. Upgrade to Pro to track unlimited problems and unlock deeper analytics.
+          </p>
+          <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+            Upgrade to Pro <ArrowRight size={16} />
+          </button>
+        </motion.div>
+      ) : (
+      <>
+        {!isSuccess && (
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '3rem' }}>
           {[1, 2, 3].map(i => (
             <div key={i} style={{ flex: 1, height: '4px', background: i <= step ? 'var(--color-primary)' : 'var(--color-border-subtle)', borderRadius: '2px', transition: 'background 0.3s ease' }} />
@@ -195,7 +215,13 @@ export function AddProblem() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '300px', margin: '0 auto' }}>
               <button 
                 className="btn btn-primary" 
-                onClick={() => navigate('/')}
+                onClick={() => navigate(savedProblemId ? `/revision-hub/session?ids=${savedProblemId}` : '/dashboard')}
+              >
+                <Zap size={16} /> Revise Now
+              </button>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => navigate('/dashboard')}
               >
                 Continue Studying
               </button>
@@ -546,6 +572,8 @@ export function AddProblem() {
         )}
 
       </AnimatePresence>
+      </>
+      )}
     </div>
   );
 }

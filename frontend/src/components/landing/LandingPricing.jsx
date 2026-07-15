@@ -33,11 +33,27 @@ export const LandingPricing = () => {
       const { data: orderData, error: orderError } = await supabase.functions.invoke('razorpay-create-order', {
         body: { 
           planId: billingCycle === 'yearly' ? 'Yearly Pro' : 'Monthly Pro',
+          interval: billingCycle === 'yearly' ? 'year' : 'month',
           couponCode: couponApplied ? 'GLITCHIVY' : null
         }
       });
       
-      if (orderError) throw new Error(orderError.message || 'Failed to create order');
+      if (orderError) {
+        let err = orderError.message;
+        try {
+          if (orderError.context && typeof orderError.context.json === 'function') {
+            const res = await orderError.context.json();
+            if (res.error) err = res.error;
+          }
+        } catch(e) {}
+        if (err === 'Unauthorized' || err?.includes('Unauthorized')) {
+          await supabase.auth.signOut();
+          alert('Your session has expired. Please log in again to continue.');
+          window.location.href = '/login?redirect=pricing';
+          return;
+        }
+        throw new Error(err || 'Failed to create order');
+      }
       
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
@@ -53,11 +69,29 @@ export const LandingPricing = () => {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
-                planId: billingCycle === 'yearly' ? 'Yearly Pro' : 'Monthly Pro',
+                planInterval: billingCycle === 'yearly' ? 'year' : 'month',
+                finalPrice: orderData.finalPrice,
+                couponId: orderData.couponId,
                 couponCode: couponApplied ? 'GLITCHIVY' : null
               }
             });
-            if (verifyError) throw verifyError;
+            if (verifyError) {
+              let err = verifyError.message;
+              try {
+                if (verifyError.context && typeof verifyError.context.json === 'function') {
+                  const res = await verifyError.context.json();
+                  if (res.error) err = res.error;
+                }
+              } catch (e) {}
+              
+              if (err === 'Unauthorized' || err?.includes('Unauthorized')) {
+                await supabase.auth.signOut();
+                alert('Session expired. Please log in again.');
+                window.location.href = '/login';
+                return;
+              }
+              throw new Error(err || 'Failed to verify payment');
+            }
             
             await refreshProfile();
             navigate('/dashboard');
@@ -183,6 +217,7 @@ export const LandingPricing = () => {
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
               {[
+                '10,000 Coins Signup Bonus',
                 '15 new problems per month',
                 'Unlimited revisions',
                 'Basic analytics & roadmap',
@@ -229,11 +264,16 @@ export const LandingPricing = () => {
                 Everything in Free, plus:
               </li>
               {[
-                'Unlimited problems tracking',
-                'Advanced analytics & insights',
-                'Company readiness tracker',
-                'Unlimited history',
-                'Premium Gold/Amber badge',
+                billingCycle === 'yearly' ? '50,000 Coins Yearly Bonus' : '20,000 Coins Monthly Bonus',
+                'Unlimited Problems',
+                'Unlimited Revisions',
+                'Advanced Analytics',
+                'Premium Themes',
+                'Priority Support',
+                'Early Access to Upcoming Features',
+                'Future AI Features',
+                'Exclusive Shop Cosmetics',
+                'Priority Feature Access',
                 'Export data to CSV/JSON',
               ].map((feat, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
@@ -242,6 +282,10 @@ export const LandingPricing = () => {
                 </li>
               ))}
             </ul>
+            
+            <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)', textAlign: 'center', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '0.5rem', border: '1px dashed rgba(255,255,255,0.1)' }}>
+              Your subscription includes early access to all upcoming premium features.
+            </p>
           </motion.div>
         </div>
 

@@ -41,7 +41,7 @@ export async function onProblemAdded(userId, solvedProblemId, solveMethod, xpEar
           if (prog.solved_count === topic.target_problem_count) {
             await onRoadmapTopicCompleted(userId, topic.name);
           } else if (prog.solved_count < topic.target_problem_count) {
-            await notify(userId, `🎯 ${topic.name} Progress`, `${prog.solved_count} / ${topic.target_problem_count} Completed`, 'activity');
+            await notify(userId, `🎯 ${topic.name} Progress`, `${prog.solved_count} / ${topic.target_problem_count} Completed`, 'system');
           }
           
           // Check if the phase was just unlocked (first problem of the phase solved)
@@ -63,7 +63,7 @@ export async function onProblemAdded(userId, solvedProblemId, solveMethod, xpEar
     }
 
     // Step 7. Create General Notification
-    await notify(userId, 'Problem Logged', 'You earned ' + xpEarned + ' XP for solving a problem!', 'activity');
+    await notify(userId, 'Problem Logged', 'You earned ' + xpEarned + ' XP for solving a problem!', 'system');
 
   } catch (error) {
     console.error('[Event Error] onProblemAdded failed:', error);
@@ -90,7 +90,7 @@ export async function onRevisionCompleted(userId, solvedProblemId, confidence) {
     await checkAchievements(userId, 'revision_completed');
 
     // Step 4. Create Notification
-    await notify(userId, 'Revision Complete', 'Great job! +10 XP', 'activity');
+    await notify(userId, 'Revision Complete', 'Great job! +10 XP', 'system');
 
   } catch (error) {
     console.error('[Event Error] onRevisionCompleted failed:', error);
@@ -124,7 +124,7 @@ export async function onManualRevisionCompleted(userId, problemId, result, confi
     await incrementDailyMission(userId, 'complete_revision');
 
     // Step 4. Create Notification
-    await notify(userId, 'Manual Practice Logged', 'Great practice! +5 XP', 'activity');
+    await notify(userId, 'Manual Practice Logged', 'Great practice! +5 XP', 'system');
 
   } catch (error) {
     console.error('[Event Error] onManualRevisionCompleted failed:', error);
@@ -141,14 +141,21 @@ export async function onMissionClaimed(userId, xp, coins, missionTitle) {
     // Mission grants specific XP and coins. The RPC handles XP and level up.
     // If we want to grant extra coins, we might need a separate RPC or pass coins to `add_user_xp` if it supports it.
     // For now, let's just use `handleXpAndLevelUp` for XP, and add an RPC for coins or update it directly.
-    const { data: stats } = await supabase.from('user_stats').select('coins').eq('user_id', userId).single();
-    await supabase.from('user_stats').update({ coins: (stats?.coins || 0) + coins }).eq('user_id', userId);
+    const { data: stats } = await supabase.from('user_stats').select('xp').eq('user_id', userId).single();
+    if (coins > 0) {
+      await supabase.from('coin_transactions').insert({
+        user_id: userId,
+        amount: coins,
+        description: `Mission: ${missionTitle}`,
+        transaction_type: 'mission_reward'
+      });
+    }
 
     await handleXpAndLevelUp(userId, xp);
     
     await handleStreak(userId, 'mission_claimed');
     
-    await notify(userId, 'Mission Complete', `You earned ${xp} XP and ${coins} coins from: ${missionTitle}`, 'activity');
+    await notify(userId, 'Mission Complete', `You earned ${xp} XP and ${coins} coins from: ${missionTitle}`, 'system');
   } catch (error) {
     console.error('[Event Error] onMissionClaimed failed:', error);
   }
@@ -262,12 +269,19 @@ async function unlockAchievement(userId, achievement) {
 
   // 2. Add Reward (XP + Coins)
   if (achievement.xp_reward > 0 || achievement.coins_reward > 0) {
-    const { data: stats } = await supabase.from('user_stats').select('total_xp, coins').eq('user_id', userId).single();
-    if (stats) {
+    const { data: stats } = await supabase.from('user_stats').select('xp').eq('user_id', userId).single();
+    if (stats && achievement.xp_reward > 0) {
       await supabase.from('user_stats').update({
-        total_xp: stats.total_xp + achievement.xp_reward,
-        coins: stats.coins + achievement.coins_reward
+        xp: stats.xp + achievement.xp_reward
       }).eq('user_id', userId);
+    }
+    if (achievement.coins_reward > 0) {
+      await supabase.from('coin_transactions').insert({
+        user_id: userId,
+        amount: achievement.coins_reward,
+        description: `Achievement: ${achievement.title}`,
+        transaction_type: 'achievement_reward'
+      });
     }
   }
 
