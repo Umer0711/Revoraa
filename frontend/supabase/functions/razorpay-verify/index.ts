@@ -81,8 +81,8 @@ serve(async (req: Request) => {
       p_payment_id: razorpay_payment_id,
       p_order_id: razorpay_order_id,
       p_plan_interval: planInterval,
-      p_final_price: finalPrice,
-      p_coupon_id: couponId
+      p_final_price: finalPrice || 0,
+      p_coupon_id: couponId || null
     });
 
     if (rpcError) {
