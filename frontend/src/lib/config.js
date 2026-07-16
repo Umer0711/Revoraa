@@ -93,3 +93,11 @@ export const featureFlags = {
   pushNotifications: firebaseConfig.isConfigured,
   googleCalendar:    Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID),
 };
+
+// ─── Telemetry (Sentry & PostHog) ─────────────────────────────────────────────
+
+export const telemetryConfig = {
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN || null,
+  posthogKey: import.meta.env.VITE_POSTHOG_KEY || null,
+  posthogHost: import.meta.env.VITE_POSTHOG_HOST || 'https://app.posthog.com',
+};

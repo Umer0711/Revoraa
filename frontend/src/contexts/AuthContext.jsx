@@ -47,15 +47,34 @@ export const AuthProvider = ({ children }) => {
         supabase.from('solved_problems').select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
       ]);
       
-      if (profileRes.data) {
-        setProfile(profileRes.data);
+      let profileData = profileRes.data;
+      let subData = subRes.data;
+
+      // 🛡️ Auto-Recovery: If user isn't Pro, check if they have a pending successful payment
+      if (profileData && (!profileData.is_pro || new Date(profileData.expires_at) < new Date())) {
+        try {
+          const { data: recData } = await supabase.rpc('recover_my_subscription');
+          if (recData?.success) {
+            const { data: refreshedProfile } = await supabase.from('profiles').select('*').eq('auth_id', uid).single();
+            if (refreshedProfile) profileData = refreshedProfile;
+            
+            const { data: refreshedSub } = await supabase.from('subscriptions').select('*').eq('user_id', uid).single();
+            if (refreshedSub) subData = refreshedSub;
+          }
+        } catch (e) {
+          console.error("Subscription auto-recovery check failed", e);
+        }
+      }
+
+      if (profileData) {
+        setProfile(profileData);
         setUsageData({
-          problems_added_this_month: profileRes.data.monthly_problem_usage || 0,
-          monthly_problem_limit: profileRes.data.monthly_problem_limit || 15,
-          usage_reset_date: profileRes.data.usage_reset_date
+          problems_added_this_month: profileData.monthly_problem_usage || 0,
+          monthly_problem_limit: profileData.monthly_problem_limit || 15,
+          usage_reset_date: profileData.usage_reset_date
         });
       }
-      if (subRes.data) setSubscriptionData(subRes.data);
+      if (subData) setSubscriptionData(subData);
     }
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -64,6 +83,9 @@ export const AuthProvider = ({ children }) => {
       await fetchUserData(session?.user?.id);
       
       if (session?.user) {
+        import('@sentry/react').then(Sentry => Sentry.setUser({ id: session.user.id, email: session.user.email }));
+        import('posthog-js').then(ph => ph.default.identify(session.user.id, { email: session.user.email }));
+        
         supabase.rpc('register_device', {
           p_fingerprint: getDeviceFingerprint(),
           p_browser_info: getBrowserInfo(),
@@ -77,6 +99,15 @@ export const AuthProvider = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       await fetchUserData(session?.user?.id);
+      
+      if (session?.user) {
+        import('@sentry/react').then(Sentry => Sentry.setUser({ id: session.user.id, email: session.user.email }));
+        import('posthog-js').then(ph => ph.default.identify(session.user.id, { email: session.user.email }));
+      } else {
+        import('@sentry/react').then(Sentry => Sentry.setUser(null));
+        import('posthog-js').then(ph => ph.default.reset());
+      }
+      
       setLoading(false);
     });
 

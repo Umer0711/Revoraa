@@ -12,6 +12,7 @@ const tabs = [
   { id: 'billing', label: 'Billing Logs', icon: CreditCard },
   { id: 'audit', label: 'Audit Logs', icon: Shield },
   { id: 'bugs', label: 'Bug Reports', icon: AlertTriangle },
+  { id: 'monitoring', label: 'Monitoring', icon: Activity, href: '/admin/monitoring' },
 ];
 
 export function AdminDashboard() {
@@ -215,7 +216,13 @@ export function AdminDashboard() {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              if (tab.href) {
+                window.location.href = tab.href;
+              } else {
+                setActiveTab(tab.id);
+              }
+            }}
             style={{
               padding: '1rem 1.5rem',
               display: 'flex', alignItems: 'center', gap: '0.5rem',

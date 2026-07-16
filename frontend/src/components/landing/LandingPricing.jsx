@@ -22,30 +22,36 @@ export const LandingPricing = () => {
   };
 
   
-  const handleUpgrade = async () => {
+  const handleCheckout = async () => {
     if (!user) {
-      navigate('/signup?redirect=pricing');
+      navigate('/login?redirect=pricing');
       return;
     }
     
+    if (profile?.is_pro === true && new Date(profile?.expires_at) > new Date()) {
+      alert('You already have an active Premium subscription.');
+      navigate('/dashboard');
+      return;
+    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('razorpay-create-order', {
+      const { data: orderData, error } = await supabase.functions.invoke('razorpay-create-order', {
         body: { 
-          planId: billingCycle === 'yearly' ? 'Yearly Pro' : 'Monthly Pro',
-          interval: billingCycle === 'yearly' ? 'year' : 'month',
+          planInterval: billingCycle === 'yearly' ? 'year' : 'month',
           couponCode: couponApplied ? 'GLITCHIVY' : null
         }
       });
       
-      if (orderError) {
-        let err = orderError.message;
+      if (error) {
+        let err = error.message;
         try {
-          if (orderError.context && typeof orderError.context.json === 'function') {
-            const res = await orderError.context.json();
+          if (error.context && typeof error.context.json === 'function') {
+            const res = await error.context.json();
             if (res.error) err = res.error;
           }
-        } catch(e) {}
+        } catch (e) {}
+        
         if (err === 'Unauthorized' || err?.includes('Unauthorized')) {
           await supabase.auth.signOut();
           alert('Your session has expired. Please log in again to continue.');
@@ -121,8 +127,8 @@ export const LandingPricing = () => {
   const getMonthlyPrice = () => couponApplied ? 99 : 149;
   const getYearlyPrice = () => couponApplied ? 999 : 1499;
 
-  const isProMonthlyActive = profile?.role === 'pro_monthly' && profile?.subscription_status === 'active';
-  const isProYearlyActive = profile?.role === 'pro_yearly' && profile?.subscription_status === 'active';
+  const isProMonthlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_monthly' && new Date(profile?.expires_at) > new Date();
+  const isProYearlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_yearly' && new Date(profile?.expires_at) > new Date();
   
   const getProButtonText = () => {
     if (isProYearlyActive) return 'Current Plan (Yearly)';
@@ -228,7 +234,7 @@ export const LandingPricing = () => {
               <span style={{ fontSize: '1.5rem', marginTop: '0.5rem', marginRight: '0.2rem' }}>₹</span>0<span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 500, alignSelf: 'flex-end', marginBottom: '0.8rem' }}>/forever</span>
             </div>
             
-            <button onClick={handleUpgrade} disabled={loading} style={{ background: 'var(--color-bg-elevated)', color: '#fff', border: '1px solid var(--color-border)', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', marginBottom: '2rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'} onMouseOut={(e) => e.target.style.background = 'var(--color-bg-elevated)'}>
+            <button onClick={handleCheckout} disabled={loading} style={{ background: 'var(--color-bg-elevated)', color: '#fff', border: '1px solid var(--color-border)', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', marginBottom: '2rem', transition: 'background 0.2s' }} onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'} onMouseOut={(e) => e.target.style.background = 'var(--color-bg-elevated)'}>
               Get Started for Free
             </button>
 
@@ -271,7 +277,7 @@ export const LandingPricing = () => {
               <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 500, alignSelf: 'flex-end', marginBottom: '0.8rem' }}>/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </div>
             
-            <button onClick={handleUpgrade} disabled={loading || getProButtonState()} style={{ background: getProButtonState() ? 'var(--color-bg-light)' : 'var(--color-primary)', color: getProButtonState() ? 'var(--color-text-muted)' : '#000', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: getProButtonState() ? 'default' : 'pointer', marginBottom: '2rem', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: getProButtonState() ? 'none' : '0 4px 14px rgba(255,171,0,0.3)' }} onMouseOver={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(255,171,0,0.4)'; } }} onMouseOut={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 14px rgba(255,171,0,0.3)'; } }}>
+            <button onClick={handleCheckout} disabled={loading || getProButtonState()} style={{ background: getProButtonState() ? 'var(--color-bg-light)' : 'var(--color-primary)', color: getProButtonState() ? 'var(--color-text-muted)' : '#000', border: 'none', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: getProButtonState() ? 'default' : 'pointer', marginBottom: '2rem', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: getProButtonState() ? 'none' : '0 4px 14px rgba(255,171,0,0.3)' }} onMouseOver={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(255,171,0,0.4)'; } }} onMouseOut={(e) => { if (!getProButtonState()) { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 14px rgba(255,171,0,0.3)'; } }}>
               {getProButtonText()} {!getProButtonState() && <ArrowRight size={16} style={{ display: 'inline', marginLeft: '0.5rem' }}/>}
             </button>
 

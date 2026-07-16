@@ -29,6 +29,7 @@ const Missions        = lazy(() => import('./pages/Missions').then(module => ({ 
 const Support         = lazy(() => import('./pages/Support').then(module => ({ default: module.Support })));
 const Pricing         = lazy(() => import('./pages/Pricing').then(module => ({ default: module.Pricing })));
 const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
+const AdminMonitoring = lazy(() => import('./pages/AdminMonitoring').then(module => ({ default: module.AdminMonitoring })));
 
 // ─── Auth & Public Pages ──────────────────────────────────────────────────────
 const Landing         = lazy(() => import('./pages/Landing').then(module => ({ default: module.Landing })));
@@ -136,6 +137,7 @@ const AnimatedRoutes = () => {
           <Route path="/support"       element={<ProtectedRoute><PageWrapper><Support /></PageWrapper></ProtectedRoute>} />
           <Route path="/pricing"       element={<ProtectedRoute><PageWrapper><Pricing /></PageWrapper></ProtectedRoute>} />
           <Route path="/admin"         element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
+          <Route path="/admin/monitoring" element={<AdminRoute><PageWrapper><AdminMonitoring /></PageWrapper></AdminRoute>} />
           <Route path="*"              element={<NotFound />} />
         </Routes>
       </Suspense>
