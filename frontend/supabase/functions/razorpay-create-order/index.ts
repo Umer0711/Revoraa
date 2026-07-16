@@ -37,9 +37,10 @@ serve(async (req: Request) => {
     // 2. Coupon Validation
     let validCouponId = null;
     if (couponCode) {
-      if (couponCode.toUpperCase() === 'GLITCHIVY') {
-        finalPrice = 1;
-        discountAmount = basePrice - 1;
+      const expiryDate = new Date('2026-07-31T23:59:59');
+      if (couponCode.toUpperCase() === 'GLITCHIVY' && new Date() <= expiryDate) {
+        finalPrice = isYearly ? 999 : 99;
+        discountAmount = basePrice - finalPrice;
       } else {
         const supabaseAdmin = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',

@@ -14,10 +14,14 @@ export const LandingPricing = () => {
   const [loading, setLoading] = useState(false);
 
   const handleApplyCoupon = () => {
-    if (couponCode.toUpperCase() === 'GLITCHIVY') {
+    const expiryDate = new Date('2026-07-31T23:59:59');
+    if (couponCode.toUpperCase() === 'GLITCHIVY' && new Date() <= expiryDate) {
       setCouponApplied(true);
     } else {
       setCouponApplied(false);
+      if (couponCode.toUpperCase() === 'GLITCHIVY') {
+        alert('This coupon expired on July 31st.');
+      }
     }
   };
 
@@ -124,8 +128,8 @@ export const LandingPricing = () => {
     }
   };
   
-  const getMonthlyPrice = () => couponApplied ? 1 : 149;
-  const getYearlyPrice = () => couponApplied ? 1 : 1499;
+  const getMonthlyPrice = () => couponApplied ? 99 : 149;
+  const getYearlyPrice = () => couponApplied ? 999 : 1499;
 
   const isProMonthlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_monthly' && new Date(profile?.expires_at) > new Date();
   const isProYearlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_yearly' && new Date(profile?.expires_at) > new Date();
