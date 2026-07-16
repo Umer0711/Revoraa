@@ -124,8 +124,8 @@ export const LandingPricing = () => {
     }
   };
   
-  const getMonthlyPrice = () => couponApplied ? 99 : 149;
-  const getYearlyPrice = () => couponApplied ? 999 : 1499;
+  const getMonthlyPrice = () => couponApplied ? 1 : 149;
+  const getYearlyPrice = () => couponApplied ? 1 : 1499;
 
   const isProMonthlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_monthly' && new Date(profile?.expires_at) > new Date();
   const isProYearlyActive = profile?.is_pro === true && profile?.plan_type === 'pro_yearly' && new Date(profile?.expires_at) > new Date();
