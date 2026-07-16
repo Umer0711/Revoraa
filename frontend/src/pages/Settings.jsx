@@ -71,9 +71,10 @@ function Toggle({ checked, onChange }) {
 }
 
 export function Settings() {
-  const { user, subscriptionData } = useAuth();
+  const { user, profile: authProfile } = useAuth();
+  const isPro = authProfile?.is_pro === true && new Date(authProfile?.expires_at) > new Date();
   const navigate = useNavigate();
-  const { isPro, isProPlus } = usePermissions();
+  const { isPro: isProPermissions, isProPlus } = usePermissions();
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -344,9 +345,9 @@ export function Settings() {
               <div style={{ padding: '1rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem', color: isPro ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
-                    {subscriptionData?.plan_id ? (subscriptionData.plan_id.includes('Yearly') ? 'Pro Yearly' : 'Pro Monthly') : 'Free Plan'}
+                    {authProfile?.plan_type === 'pro_yearly' ? 'Pro Yearly' : (authProfile?.plan_type === 'pro_monthly' ? 'Pro Monthly' : 'Free Plan')}
                   </h4>
-                  <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(subscriptionData?.current_period_end).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
+                  <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(authProfile?.expires_at).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
                 </div>
                 {!isPro && (
                   <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
