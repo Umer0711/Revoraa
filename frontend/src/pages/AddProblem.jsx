@@ -29,12 +29,12 @@ const slideVariants = {
 };
 
 export function AddProblem() {
-  const { user, profile, subscriptionData, usageData } = useAuth();
+  const { user, profile, usageData } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
 
-  const isPremium = subscriptionData?.status === 'active';
+  const isPremium = profile?.is_pro === true && new Date(profile?.expires_at) > new Date();
   const usageCurrent = usageData?.problems_added_this_month || 0;
   const usageLimit = usageData?.monthly_problem_limit || 15;
   const limitReached = !isPremium && usageCurrent >= usageLimit;

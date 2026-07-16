@@ -60,7 +60,8 @@ function SkeletonCard({ className }) {
 }
 
 export function Dashboard() {
-  const { user, subscriptionData, usageData } = useAuth();
+  const { user, profile: authProfile, usageData } = useAuth();
+  const isPro = authProfile?.is_pro === true && new Date(authProfile?.expires_at) > new Date();
   const { refreshKey } = useRealtime();
   const [data, setData] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -313,22 +314,22 @@ export function Dashboard() {
           <AccentBar color="var(--color-primary)" />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Zap size={14} color="var(--color-primary)"/> {subscriptionData?.status === 'active' ? 'Pro Plan' : 'Free Plan'}
+              <Zap size={14} color="var(--color-primary)"/> {isPro ? 'Pro Plan' : 'Free Plan'}
             </h3>
-            {subscriptionData?.status !== 'active' && (
+            {!isPro && (
               <Link to="/pricing" style={{ fontSize: '0.75rem', color: '#000', background: 'var(--color-primary)', padding: '0.2rem 0.6rem', borderRadius: '1rem', textDecoration: 'none', fontWeight: 600 }}>Upgrade</Link>
             )}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginBottom: '0.25rem' }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>
-                {subscriptionData?.status === 'active' ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
+                {isPro ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
               </span>
               <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 500, paddingBottom: '0.2rem' }}>
-                {subscriptionData?.status === 'active' ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
+                {isPro ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
               </span>
             </div>
-            {subscriptionData?.status !== 'active' && (
+            {!isPro && (
               <div style={{ width: '100%', height: '6px', background: 'var(--color-bg-light)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
                 <div style={{ width: `${Math.min(100, ((usageData?.problems_added_this_month || 0) / (usageData?.monthly_problem_limit || 15)) * 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '3px' }} />
               </div>

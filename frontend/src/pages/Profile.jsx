@@ -31,7 +31,8 @@ function StatItem({ label, value, suffix }) {
 }
 
 export function Profile() {
-  const { user, subscriptionData } = useAuth();
+  const { user, profile: authProfile } = useAuth();
+  const isPro = authProfile?.is_pro === true && new Date(authProfile?.expires_at) > new Date();
   const { equippedItems } = useCosmetics();
   const [data, setData]     = useState(null);
   const [loading, setLoading] = useState(true);
@@ -138,7 +139,7 @@ export function Profile() {
                     return <BadgeIcon size={24} color={equippedItems.badges.color} />;
                   })()}
                   {profile.full_name ?? firstName}
-                  {subscriptionData?.status === 'active' && (
+                  {isPro && (
                     <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: 'rgba(255,171,0,0.1)', color: 'var(--color-primary)', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 700 }}>
                       <Zap size={14} /> PRO
                     </span>

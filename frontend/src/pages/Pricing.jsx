@@ -8,10 +8,10 @@ import { SEO } from '../components/SEO';
 
 
 export const Pricing = () => {
-  const { user, subscriptionData, usageData } = useAuth();
+  const { user, profile, usageData } = useAuth();
   
-  const isPremium = subscriptionData && subscriptionData.status === 'active';
-  const planName = subscriptionData?.plan_id?.includes('Yearly') ? 'Pro Yearly' : (subscriptionData?.plan_id?.includes('Monthly') ? 'Pro Monthly' : 'Free Plan');
+  const isPremium = profile?.is_pro === true && new Date(profile?.expires_at) > new Date();
+  const planName = profile?.plan_type === 'pro_yearly' ? 'Pro Yearly' : (profile?.plan_type === 'pro_monthly' ? 'Pro Monthly' : 'Free Plan');
   const usageLimit = usageData?.monthly_problem_limit || 15;
   const usageCurrent = usageData?.problems_added_this_month || 0;
   const usageRemaining = Math.max(0, usageLimit - usageCurrent);
@@ -20,8 +20,8 @@ export const Pricing = () => {
     ? new Date(usageData.usage_reset_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : 'N/A';
 
-  const renewalDate = subscriptionData?.current_period_end 
-    ? new Date(subscriptionData.current_period_end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  const renewalDate = profile?.expires_at 
+    ? new Date(profile.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : 'N/A';
 
   return (

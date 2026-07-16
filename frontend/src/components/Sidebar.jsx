@@ -76,7 +76,8 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { user, subscriptionData, profile } = useAuth();
+  const { user, profile } = useAuth();
+  const isPro = profile?.is_pro === true && new Date(profile?.expires_at) > new Date();
   const { equippedItems } = useCosmetics();
 
   const [notifications, setNotifications] = useState([]);
@@ -388,7 +389,7 @@ export function Sidebar() {
                     return <BadgeIcon size={14} color={equippedItems.badges.color} />;
                   })()}
                   {firstName}
-                  {subscriptionData?.status === 'active' && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: 'black', fontSize: '0.5rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.05em' }}>PRO</div>}
+                  {isPro && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: 'black', fontSize: '0.5rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.05em' }}>PRO</div>}
                 </span>
                 <div className="user-meta">
                   <span className="user-level">Lvl {Math.floor((profileData?.stats?.xp || 0) / 500) + 1}</span>
