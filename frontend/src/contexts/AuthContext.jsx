@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
             const { data: refreshedProfile } = await supabase.from('profiles').select('*').eq('auth_id', uid).single();
             if (refreshedProfile) profileData = refreshedProfile;
             
-            const { data: refreshedSub } = await supabase.from('subscriptions').select('*').eq('user_id', uid).single();
+            const { data: refreshedSub } = await supabase.from('subscriptions').select('*').eq('user_id', uid).maybeSingle();
             if (refreshedSub) subData = refreshedSub;
           }
         } catch (e) {
