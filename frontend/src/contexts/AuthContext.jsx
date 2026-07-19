@@ -52,18 +52,7 @@ export const AuthProvider = ({ children }) => {
 
       // 🛡️ Auto-Recovery: If user isn't Pro, check if they have a pending successful payment
       if (profileData && (!profileData.is_pro || new Date(profileData.expires_at) < new Date())) {
-        try {
-          const { data: recData } = await supabase.rpc('recover_my_subscription');
-          if (recData?.success) {
-            const { data: refreshedProfile } = await supabase.from('profiles').select('*').eq('auth_id', uid).single();
-            if (refreshedProfile) profileData = refreshedProfile;
-            
-            const { data: refreshedSub } = await supabase.from('subscriptions').select('*').eq('user_id', uid).maybeSingle();
-            if (refreshedSub) subData = refreshedSub;
-          }
-        } catch (e) {
-          console.error("Subscription auto-recovery check failed", e);
-        }
+        await syncSubscription(uid);
       }
 
       if (profileData) {
@@ -76,6 +65,7 @@ export const AuthProvider = ({ children }) => {
       }
       if (subData) setSubscriptionData(subData);
     }
+
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
@@ -148,6 +138,25 @@ export const AuthProvider = ({ children }) => {
     };
   }, [session?.user?.id]); // depend on session.user.id so realtime channels attach correctly after login
 
+  const syncSubscription = async (uid = user?.id) => {
+    if (!uid) return false;
+    try {
+      const { data: recData } = await supabase.rpc('recover_my_subscription');
+      if (recData?.success) {
+        const { data: refreshedProfile } = await supabase.from('profiles').select('*').eq('auth_id', uid).single();
+        if (refreshedProfile) setProfile(refreshedProfile);
+        
+        const { data: refreshedSub } = await supabase.from('subscriptions').select('*').eq('user_id', uid).maybeSingle();
+        if (refreshedSub) setSubscriptionData(refreshedSub);
+        
+        return true;
+      }
+    } catch (e) {
+      console.error("Subscription auto-recovery check failed", e);
+    }
+    return false;
+  };
+
   const value = {
     session,
     user,
@@ -155,6 +164,7 @@ export const AuthProvider = ({ children }) => {
     subscriptionData,
     usageData,
     loading,
+    syncSubscription,
   };
 
   return (

@@ -8,7 +8,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../lib/permissions';
 import { getProfileData, updateProfile, getUserSettings, updateUserSettings } from '../lib/dataService';
+import { toast } from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
+import { FEATURES } from '../lib/features';
 import { authConfig } from '../lib/config';
 import { useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
@@ -18,22 +20,8 @@ const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { st
 const item = { hidden: { opacity: 0, y: 15, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 220, damping: 24 } } };
 
 
-const LockOverlay = ({ title }) => (
-  <div style={{
-    position: 'absolute', inset: 0, 
-    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    borderRadius: 'inherit', zIndex: 10, color: 'white', textAlign: 'center', padding: '1rem'
-  }}>
-    <Lock size={24} color="var(--color-primary)" style={{ marginBottom: '0.5rem' }} />
-    <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{title}</p>
-    <a href="/pricing" className="btn btn-primary" style={{ padding: '0.3rem 0.8rem', fontSize: '0.75rem', textDecoration: 'none' }}>Upgrade to Pro</a>
-  </div>
-);
-
-const SettingCard = ({ icon: Icon, title, desc, colSpan = 1, children, color = 'var(--color-primary)', danger = false, locked = false }) => (
+const SettingCard = ({ icon: Icon, title, desc, colSpan = 1, children, color = 'var(--color-primary)', danger = false }) => (
   <motion.div variants={item} className={`bento-card col-span-${colSpan}`} style={{ position: 'relative', display: 'flex', flexDirection: 'column', borderColor: danger ? 'var(--color-mistakes)' : undefined, background: danger ? 'rgba(239,68,68,0.03)' : undefined }}>
-    {locked && <LockOverlay title={`${title} is a Premium Feature`} />}
 
   
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: children ? '1.5rem' : 0 }}>
@@ -283,7 +271,7 @@ export function Settings() {
           </SettingCard>
 
           {/* Appearance */}
-          <SettingCard icon={Palette} title="Appearance" desc="Customize your UI theme and colors." colSpan={2} color="var(--color-readiness)" locked={!isPro}>
+          <SettingCard icon={Palette} title="Appearance" desc="Customize your UI theme and colors." colSpan={2} color="var(--color-readiness)">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
               {[{ icon: Monitor, label: 'System', val: 'system' }, { icon: Moon, label: 'Dark', val: 'dark' }, { icon: Sun, label: 'Light', val: 'light' }].map((t) => {
                 const isActive = theme === t.val;
@@ -340,30 +328,38 @@ export function Settings() {
           
           
           {/* Billing & Subscription */}
-          <SettingCard icon={CreditCard} title="Subscription & Billing" desc="Manage your subscription plan and billing details." color="var(--color-primary)">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ padding: '1rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem', color: isPro ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
-                    {authProfile?.plan_type === 'pro_yearly' ? 'Pro Yearly' : (authProfile?.plan_type === 'pro_monthly' ? 'Pro Monthly' : 'Free Plan')}
-                  </h4>
-                  <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(authProfile?.expires_at).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
+          {FEATURES.PREMIUM ? (
+            <SettingCard icon={CreditCard} title="Subscription & Billing" desc="Manage your subscription plan and billing details." color="var(--color-primary)">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ padding: '1rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem', color: isPro ? 'var(--color-primary)' : 'var(--color-text-primary)' }}>
+                      {authProfile?.plan_type === 'pro_yearly' ? 'Pro Yearly' : (authProfile?.plan_type === 'pro_monthly' ? 'Pro Monthly' : 'Free Plan')}
+                    </h4>
+                    <p className="text-muted text-sm">{isPro ? `Your subscription is active. Renews on: ${new Date(authProfile?.expires_at).toLocaleDateString()}` : 'Upgrade to unlock unlimited problems and advanced analytics.'}</p>
+                  </div>
+                  {!isPro && (
+                    <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                      Upgrade to Pro
+                    </button>
+                  )}
+                  {isPro && (
+                    <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/pricing')}>
+                      Manage Billing
+                    </button>
+                  )}
                 </div>
-                {!isPro && (
-                  <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
-                    Upgrade to Pro
-                  </button>
-                )}
-                {isPro && (
-                  <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => navigate('/pricing')}>
-                    Manage Billing
-                  </button>
-                )}
               </div>
-            </div>
-          </SettingCard>
-
-
+            </SettingCard>
+          ) : (
+            <SettingCard icon={CreditCard} title="Account" desc="Your account status." color="var(--color-primary)">
+              <div style={{ padding: '1rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+                <p className="text-muted text-sm">
+                  Your account is currently on the Free Version of Revoraa. All core features are available during this launch phase. Premium features will return in a future update.
+                </p>
+              </div>
+            </SettingCard>
+          )}
           {/* Keyboard Shortcuts */}
           <SettingCard icon={Keyboard} title="Keyboard Shortcuts" desc="Speed up your workflow." color="var(--color-analytics)">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -397,7 +393,7 @@ export function Settings() {
           </SettingCard>
 
           {/* Data Export */}
-          <SettingCard icon={Shield} title="Data Export" desc="Download all your problems and notes as CSV." color="var(--color-xp)" locked={!isPro}>
+          <SettingCard icon={Shield} title="Data Export" desc="Download all your problems and notes as CSV." color="var(--color-xp)">
             <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleExport}>
               Export Problems CSV
             </button>

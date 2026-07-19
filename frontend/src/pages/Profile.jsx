@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Code, Briefcase, Globe, Award, Target, Zap, Settings, Loader2, Lock } from 'lucide-react';
 import * as Icons from 'lucide-react';
+import { FEATURES } from '../lib/features';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCosmetics } from '../contexts/CosmeticContext';
@@ -139,7 +140,7 @@ export function Profile() {
                     return <BadgeIcon size={24} color={equippedItems.badges.color} />;
                   })()}
                   {profile.full_name ?? firstName}
-                  {isPro && (
+                  {FEATURES.PREMIUM && isPro && (
                     <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: 'rgba(255,171,0,0.1)', color: 'var(--color-primary)', borderRadius: '1rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 700 }}>
                       <Zap size={14} /> PRO
                     </span>

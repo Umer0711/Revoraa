@@ -7,9 +7,8 @@ import { getDashboardData } from '../lib/dataService';
 import { supabase } from '../lib/supabaseClient';
 import { useRealtime } from '../contexts/RealtimeContext';
 import { submitInstantRevision } from '../lib/problemsService';
-import { usePermissions } from '../lib/permissions';
-import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import { FEATURES } from '../lib/features';
 import { SEO } from '../components/SEO';
 
 
@@ -71,6 +70,15 @@ export function Dashboard() {
   const [error, setError] = useState('');
 
   const [initTasks, setInitTasks] = useState(null);
+
+  // Clear state on user change
+  useEffect(() => {
+    setProfile(null);
+    setData(null);
+    setLoading(true);
+    setInitTasks(null);
+    setQuickRecallProblem(null);
+  }, [user?.id]);
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -258,7 +266,7 @@ export function Dashboard() {
               </a>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div className="quick-recall-grid">
               <button 
                 onClick={async () => {
                   setGradingLoading(true);
@@ -314,22 +322,22 @@ export function Dashboard() {
           <AccentBar color="var(--color-primary)" />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Zap size={14} color="var(--color-primary)"/> {isPro ? 'Pro Plan' : 'Free Plan'}
+              <Zap size={14} color="var(--color-primary)"/> {FEATURES.PREMIUM ? (isPro ? 'Pro Plan' : 'Free Plan') : 'Free Plan'}
             </h3>
-            {!isPro && (
+            {!isPro && FEATURES.PREMIUM && (
               <Link to="/pricing" style={{ fontSize: '0.75rem', color: '#000', background: 'var(--color-primary)', padding: '0.2rem 0.6rem', borderRadius: '1rem', textDecoration: 'none', fontWeight: 600 }}>Upgrade</Link>
             )}
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginBottom: '0.25rem' }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>
-                {isPro ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
+                {(isPro || !FEATURES.PREMIUM) ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
               </span>
               <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 500, paddingBottom: '0.2rem' }}>
-                {isPro ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
+                {(isPro || !FEATURES.PREMIUM) ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
               </span>
             </div>
-            {!isPro && (
+            {!isPro && FEATURES.PREMIUM && (
               <div style={{ width: '100%', height: '6px', background: 'var(--color-bg-light)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
                 <div style={{ width: `${Math.min(100, ((usageData?.problems_added_this_month || 0) / (usageData?.monthly_problem_limit || 15)) * 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '3px' }} />
               </div>

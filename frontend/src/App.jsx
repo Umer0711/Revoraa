@@ -8,6 +8,7 @@ import { CheckCircle2, Circle, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlobalCelebrations } from './components/ui/GlobalCelebrations';
 import { WelcomeCelebration } from './components/ui/WelcomeCelebration';
+import { FEATURES } from './lib/features';
 
 const Dashboard       = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const ProblemLibrary  = lazy(() => import('./pages/ProblemLibrary').then(module => ({ default: module.ProblemLibrary })));
@@ -135,7 +136,9 @@ const AnimatedRoutes = () => {
           <Route path="/missions"      element={<ProtectedRoute><PageWrapper><Missions /></PageWrapper></ProtectedRoute>} />
           <Route path="/settings"      element={<ProtectedRoute><PageWrapper><Settings /></PageWrapper></ProtectedRoute>} />
           <Route path="/support"       element={<ProtectedRoute><PageWrapper><Support /></PageWrapper></ProtectedRoute>} />
-          <Route path="/pricing"       element={<ProtectedRoute><PageWrapper><Pricing /></PageWrapper></ProtectedRoute>} />
+          {FEATURES.PREMIUM && (
+            <Route path="/pricing"       element={<ProtectedRoute><PageWrapper><Pricing /></PageWrapper></ProtectedRoute>} />
+          )}
           <Route path="/admin"         element={<AdminRoute><PageWrapper><AdminDashboard /></PageWrapper></AdminRoute>} />
           <Route path="/admin/monitoring" element={<AdminRoute><PageWrapper><AdminMonitoring /></PageWrapper></AdminRoute>} />
           <Route path="*"              element={<NotFound />} />

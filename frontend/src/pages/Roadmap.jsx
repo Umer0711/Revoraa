@@ -9,14 +9,7 @@ import { useRealtime } from '../contexts/RealtimeContext';
 import { SEO } from '../components/SEO';
 
 
-// Fallback placeholder since roadmaps aren't fully dynamic yet (before migration)
-const fallbackPhases = [
-  { label: 'Phase 1: Core Data Structures',  topics: 'Arrays, HashMaps, Strings, Linked Lists',  status: 'done',       pct: 100 },
-  { label: 'Phase 2: Two-Pointer Patterns',   topics: 'Sliding Window, Fast & Slow, Merge Intervals', status: 'active', pct: 68  },
-  { label: 'Phase 3: Trees & Graphs',         topics: 'BFS, DFS, Dijkstra, Union-Find',          status: 'locked',     pct: 0   },
-  { label: 'Phase 4: Dynamic Programming',    topics: 'Memoization, Tabulation, 2D DP',          status: 'locked',     pct: 0   },
-  { label: 'Phase 5: System Design Prep',     topics: 'HLD, LLD, OOPS, Scalability',             status: 'locked',     pct: 0   },
-];
+
 
 export const Roadmap = () => {
   const { user } = useAuth();
@@ -67,20 +60,11 @@ export const Roadmap = () => {
         <Loader2 size={24} className="text-muted" style={{ animation: 'spin 1s linear infinite' }} />
       </div>
     );
-  } else if (!roadmap) {
-    // Render Fallback if migration not applied
+  } else if (!roadmap || roadmap.length === 0) {
     content = (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ padding: '1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>
-          Database migration for Roadmap not applied. Showing demo data. Please run `npx supabase db reset` or apply `20240101000007_dynamic_roadmap.sql`.
-        </div>
-        {fallbackPhases.map(({ label, topics, status, pct }, i) => {
-          const isDone   = status === 'done';
-          const isActive = status === 'active';
-          const isLocked = status === 'locked';
-          const accent   = isDone ? 'var(--color-strong)' : isActive ? 'var(--color-readiness)' : 'var(--color-text-muted)';
-          return <RoadmapCard key={i} label={label} topics={topics} pct={pct} isDone={isDone} isActive={isActive} isLocked={isLocked} accent={accent} index={i} />
-        })}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 2rem', textAlign: 'center', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+        <p className="text-secondary" style={{ fontSize: '1.1rem' }}>No roadmap data available.</p>
+        <p className="text-muted text-sm" style={{ marginTop: '0.5rem' }}>Start solving problems to build your personalized roadmap.</p>
       </div>
     );
   } else {

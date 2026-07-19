@@ -2,3 +2,15 @@
 .dashboard-page {
   padding-bottom: 3rem;
 }
+
+.quick-recall-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .quick-recall-grid {
+    grid-template-columns: 1fr;
+  }
+}

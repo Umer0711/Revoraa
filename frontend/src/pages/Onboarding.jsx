@@ -97,11 +97,7 @@ export const Onboarding = () => {
           console.error('Failed to complete onboarding', e);
         }
         timer = setTimeout(() => {
-          if (formData.plan === 'free') {
-            navigate('/dashboard');
-          } else {
-            navigate('/pricing');
-          }
+          navigate('/dashboard');
         }, 1400);
       };
       completeOnboarding();

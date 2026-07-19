@@ -101,6 +101,24 @@ export function AdminMonitoring() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button className="btn btn-secondary" onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            Export CSV
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '0.5rem 1rem', borderRadius: '2rem', fontWeight: 600 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }} />
+            {stats?.status === 'operational' ? 'All Systems Operational' : 'Degraded Performance'}
+          </div>
+          <button className="btn btn-secondary" onClick={fetchStats} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <RefreshCw size={16} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', border: '1px solid var(--color-primary)' }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--color-primary)' }}>
+          <Zap size={20} /> System Recovery Tools
+        </h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
           <button 
             className="btn btn-secondary" 
             onClick={async () => {
@@ -113,19 +131,24 @@ export function AdminMonitoring() {
                 }
               }
             }} 
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
           >
-            <Shield size={16} /> Auto-Recover Payments
+            <RefreshCw size={16} /> Recover Subscriptions
           </button>
-          <button className="btn btn-secondary" onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            Export CSV
+          
+          <button className="btn btn-secondary" onClick={() => alert('Payment Audit Tool coming soon...')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Shield size={16} /> Payment Audit
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', padding: '0.5rem 1rem', borderRadius: '2rem', fontWeight: 600 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 8px #22c55e' }} />
-            {stats?.status === 'operational' ? 'All Systems Operational' : 'Degraded Performance'}
-          </div>
-          <button className="btn btn-secondary" onClick={fetchStats} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <RefreshCw size={16} /> Refresh
+          
+          <button className="btn btn-secondary" onClick={() => alert('Subscription Audit Tool coming soon...')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Database size={16} /> Subscription Audit
+          </button>
+          
+          <button className="btn btn-secondary" onClick={() => {
+            const uid = prompt("Enter User UUID to repair:");
+            if (uid) alert(`Repaired User ${uid} (Dry Run)`);
+          }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertTriangle size={16} /> Repair User
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from './supabaseClient';
+import { FEATURES } from './features';
 
 /**
  * Validates if the user's role grants them a specific permission.
@@ -10,6 +11,9 @@ export function hasPermission(subscriptionData, permission) {
   
   if (isPremium) return true; // Premium has all permissions for now
   
+  // Free-Only Mode bypass
+  if (!FEATURES.PREMIUM) return true;
+
   // Free users permissions
   const permissions = {
     unlimitedProblems: false,

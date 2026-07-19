@@ -22,6 +22,12 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Free-Only Mode: Disable all payments globally
+  return new Response(JSON.stringify({ error: "Payments are temporarily unavailable." }), {
+    status: 503,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+
   try {
     console.log("Processing razorpay-verify request...");
 

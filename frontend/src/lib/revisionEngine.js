@@ -24,26 +24,21 @@ export function calculateNextRevision({ revisionNumber = 0, easeFactor = 2.5, in
   let newRevisionNumber = revisionNumber;
 
   if (result === 'failed') {
-    // Couldn't solve — restart from tomorrow
+    // Forgot -> Return to 1 day and reset progression
     newInterval = 1;
     newRevisionNumber = 0;
     newEaseFactor = Math.max(1.3, easeFactor - 0.2);
   } else if (result === 'hint') {
-    // Needed hint — repeat shorter interval
-    newInterval = Math.max(1, Math.floor(intervalDays * 0.6));
-    newEaseFactor = Math.max(1.3, easeFactor - 0.15);
+    // Needed hint -> Return to previous interval step
     newRevisionNumber = Math.max(0, revisionNumber - 1);
+    newInterval = BASE_INTERVALS[Math.min(newRevisionNumber, BASE_INTERVALS.length - 1)];
+    newEaseFactor = Math.max(1.3, easeFactor - 0.15);
   } else {
-    // Solved easily — advance based on SM-2
+    // Remembered -> Move to next interval
     newRevisionNumber = revisionNumber + 1;
-
-    if (newRevisionNumber <= BASE_INTERVALS.length) {
-      // Use predefined intervals for first N revisions
-      newInterval = BASE_INTERVALS[Math.min(newRevisionNumber - 1, BASE_INTERVALS.length - 1)];
-    } else {
-      // Beyond predefined: use SM-2 formula
-      newInterval = Math.round(intervalDays * easeFactor);
-    }
+    
+    // Use predefined intervals
+    newInterval = BASE_INTERVALS[Math.min(newRevisionNumber, BASE_INTERVALS.length - 1)];
 
     // Adjust ease factor based on confidence (1-5 → quality 0-5 in SM-2)
     const quality = confidence ?? 3; // default medium
@@ -53,9 +48,12 @@ export function calculateNextRevision({ revisionNumber = 0, easeFactor = 2.5, in
 
   const nextDate = new Date();
   nextDate.setDate(nextDate.getDate() + newInterval);
+  const yyyy = nextDate.getFullYear();
+  const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(nextDate.getDate()).padStart(2, '0');
 
   return {
-    nextDate: nextDate.toISOString().split('T')[0],   // YYYY-MM-DD
+    nextDate: `${yyyy}-${mm}-${dd}`,   // Local YYYY-MM-DD
     intervalDays: newInterval,
     easeFactor: Math.round(newEaseFactor * 100) / 100,
     revisionNumber: newRevisionNumber,
@@ -68,5 +66,8 @@ export function calculateNextRevision({ revisionNumber = 0, easeFactor = 2.5, in
 export function getInitialRevisionDate() {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split('T')[0];
+  const yyyy = tomorrow.getFullYear();
+  const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const dd = String(tomorrow.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }

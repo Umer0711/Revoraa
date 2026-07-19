@@ -40,7 +40,7 @@ FOR EACH ROW EXECUTE FUNCTION public.update_coins_balance();
 -- This fixes any missing 10k signup bonuses that were inserted into coin_transactions but not applied to the profile!
 UPDATE public.profiles p
 SET coins_balance = COALESCE(
-  (SELECT SUM(amount) FROM public.coin_transactions ct WHERE ct.user_id = p.auth_id),
+  (SELECT GREATEST(SUM(amount), 0) FROM public.coin_transactions ct WHERE ct.user_id = p.auth_id),
   0
 );
 

@@ -74,6 +74,14 @@ export function Revision() {
   const [submitting, setSubmitting] = useState(false);
   const [isManualSession, setIsManualSession] = useState(false);
   const [manualQueue, setManualQueue] = useState([]);
+  const [manualQuery, setManualQuery] = useState('');
+  
+  // Clear state on user change
+  useEffect(() => {
+    setQueue([]);
+    setManualProblems([]);
+    setLoading(true);
+  }, [user?.id]);
 
   const activeQueue = isManualSession ? manualQueue : queue;
   const total = activeQueue.length;
@@ -591,7 +599,7 @@ export function Revision() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', background: 'var(--color-bg-surface)', padding: '0.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', marginBottom: '2.5rem', width: 'fit-content', position: 'relative' }}>
+          <div style={{ display: 'flex', background: 'var(--color-bg-surface)', padding: '0.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', marginBottom: '2.5rem', width: 'fit-content', position: 'relative', maxWidth: '100%', overflowX: 'auto' }}>
             <motion.div
               layoutId="activeTabIndicator"
               style={{ position: 'absolute', left: '0.25rem', background: 'var(--color-bg-glass)', borderRadius: 'var(--radius-md)', top: '0.25rem', bottom: '0.25rem', border: '1px solid var(--color-border-subtle)', zIndex: 0 }}

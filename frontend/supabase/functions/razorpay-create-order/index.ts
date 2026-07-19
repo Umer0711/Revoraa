@@ -12,6 +12,12 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Free-Only Mode: Disable all payments globally
+  return new Response(JSON.stringify({ error: "Payments are temporarily unavailable." }), {
+    status: 503,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -28,6 +34,35 @@ serve(async (req: Request) => {
     const body = await req.json();
     const { planId, interval, couponCode } = body;
 
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // 0. Prevent Double Payments
+    const { data: existingSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('expires_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (existingSub && new Date(existingSub.expires_at) > new Date()) {
+      return new Response(JSON.stringify({ error: 'You already have an active Premium subscription.' }), { status: 400 });
+    }
+
+    const { data: pendingPayment } = await supabaseAdmin
+      .from('billing_history')
+      .select('status, subscription_id')
+      .eq('user_id', user.id)
+      .in('status', ['success', 'failed_activation'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (pendingPayment?.length > 0 && (!pendingPayment[0].subscription_id || pendingPayment[0].status === 'failed_activation')) {
+      return new Response(JSON.stringify({ error: 'You have a pending or failed activation. Please refresh the page to recover it.' }), { status: 400 });
+    }
+
     // 1. Base Prices
     let isYearly = interval === 'year' || (planId && planId.toLowerCase().includes('year'));
     let basePrice = isYearly ? 1499 : 149;
@@ -41,12 +76,7 @@ serve(async (req: Request) => {
       if (couponCode.toUpperCase() === 'GLITCHIVY' && new Date() <= expiryDate) {
         finalPrice = isYearly ? 999 : 99;
         discountAmount = basePrice - finalPrice;
-      } else {
-        const supabaseAdmin = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-        
+      } else {        
         const { data: coupon, error: couponError } = await supabaseAdmin
           .from('coupons')
           .select('*')

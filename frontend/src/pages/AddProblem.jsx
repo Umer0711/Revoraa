@@ -5,6 +5,7 @@ import { Link2, Search, ArrowRight, ArrowLeft, Check, Zap, CalendarClock, AlertC
 import { useAuth } from '../contexts/AuthContext';
 import { saveSolvedProblem, detectPatternFromTags } from '../lib/problemsService';
 import { resolveProblemMetadata } from '../lib/providers';
+import { FEATURES } from '../lib/features';
 
 const SOLVE_METHODS = [
   { key: 'myself',   label: 'Myself',        desc: 'Solved completely on my own' },
@@ -37,7 +38,7 @@ export function AddProblem() {
   const isPremium = profile?.is_pro === true && new Date(profile?.expires_at) > new Date();
   const usageCurrent = usageData?.problems_added_this_month || 0;
   const usageLimit = usageData?.monthly_problem_limit || 15;
-  const limitReached = !isPremium && usageCurrent >= usageLimit;
+  const limitReached = FEATURES.PREMIUM && !isPremium && usageCurrent >= usageLimit;
 
   // Form State
   const [url, setUrl] = useState('');
@@ -169,11 +170,14 @@ export function AddProblem() {
           </div>
           <h2 style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Free Limit Reached</h2>
           <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-            You've tracked {usageLimit} problems this month. Upgrade to Pro to track unlimited problems and unlock deeper analytics.
+            You've tracked {usageLimit} problems this month. 
+            {FEATURES.PREMIUM ? " Upgrade to Pro to track unlimited problems and unlock deeper analytics." : " Wait for your monthly reset to track more problems."}
           </p>
-          <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-            Upgrade to Pro <ArrowRight size={16} />
-          </button>
+          {FEATURES.PREMIUM && (
+            <button onClick={() => navigate('/pricing')} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+              Upgrade to Pro <ArrowRight size={16} />
+            </button>
+          )}
         </motion.div>
       ) : (
       <>
@@ -538,11 +542,14 @@ export function AddProblem() {
                   <AlertCircle size={18} style={{ flexShrink: 0 }} /> Monthly limit reached
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                  Monthly limit reached. Your free quota will reset on {new Date(profile?.usage_reset_date).toLocaleDateString()}. Upgrade to Pro for unlimited tracking.
+                  Monthly limit reached. Your free quota will reset on {new Date(profile?.usage_reset_date).toLocaleDateString()}.
+                  {FEATURES.PREMIUM && " Upgrade to Pro for unlimited tracking."}
                 </p>
-                <button onClick={() => window.location.href='/pricing'} className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                  Upgrade to Pro
-                </button>
+                {FEATURES.PREMIUM && (
+                  <button onClick={() => window.location.href='/pricing'} className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                    Upgrade to Pro
+                  </button>
+                )}
               </div>
             ) : saveError ? (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '0.875rem', marginBottom: '1rem' }}>

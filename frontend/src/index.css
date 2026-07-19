@@ -827,6 +827,12 @@ p  { font-size: 0.9rem; }
   .data-table td:nth-child(8) {
     display: none;
   }
+  
+  /* Ensure touch targets are at least 44x44px */
+  .btn, .btn-icon, .nav-link, button {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* =============================================

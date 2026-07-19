@@ -2,3 +2,11 @@
 .library-page {
   padding-bottom: 3rem;
 }
+
+@media (max-width: 768px) {
+  .library-page {
+    padding-bottom: 6rem; /* Ensure bottom spacing avoids mobile nav / bottom bars */
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}

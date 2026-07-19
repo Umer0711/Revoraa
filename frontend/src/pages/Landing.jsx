@@ -11,6 +11,7 @@ import { AmbientCursor } from '../components/landing/effects/AmbientCursor';
 import { FloatingParticles } from '../components/landing/effects/FloatingParticles';
 import './Landing.css';
 import { SEO } from '../components/SEO';
+import { FEATURES } from '../lib/features';
 
 
 export const Landing = () => {
@@ -31,7 +32,7 @@ export const Landing = () => {
       
       <LandingHero />
       <LandingProductTour />
-      <LandingPricing />
+      {FEATURES.PREMIUM && <LandingPricing />}
       <LandingStoryFAQ />
       <LandingFooter />
       

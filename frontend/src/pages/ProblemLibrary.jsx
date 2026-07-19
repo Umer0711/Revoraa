@@ -61,6 +61,12 @@ export function ProblemLibrary() {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
 
+  // Clear data immediately when user changes to prevent data leaking
+  useEffect(() => {
+    setProblems([]);
+    setLoading(true);
+  }, [user?.id]);
+
   const fetchProblems = useCallback(async () => {
     if (!user) return;
     setLoading(true);

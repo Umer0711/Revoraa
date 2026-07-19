@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCosmetics } from '../contexts/CosmeticContext';
 import { getNotifications, markAllNotificationsRead, getProfileData } from '../lib/dataService';
 import { supabase } from '../lib/supabaseClient';
+import { FEATURES } from '../lib/features';
 import * as Icons from 'lucide-react';
 import './Sidebar.css';
 
@@ -389,7 +390,7 @@ export function Sidebar() {
                     return <BadgeIcon size={14} color={equippedItems.badges.color} />;
                   })()}
                   {firstName}
-                  {isPro && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: 'black', fontSize: '0.5rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.05em' }}>PRO</div>}
+                  {FEATURES.PREMIUM && isPro && <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--color-primary)', color: 'black', fontSize: '0.5rem', padding: '1px 4px', borderRadius: '4px', fontWeight: 800, letterSpacing: '0.05em' }}>PRO</div>}
                 </span>
                 <div className="user-meta">
                   <span className="user-level">Lvl {Math.floor((profileData?.stats?.xp || 0) / 500) + 1}</span>
@@ -425,7 +426,7 @@ export function Sidebar() {
                   { icon: User,    label: 'Profile',       path: '/profile' },
                   { icon: Settings,label: 'Settings',      path: '/settings' },
                   { icon: Award,   label: 'Achievements',  path: '/achievements' },
-                  { icon: CreditCard, label: 'Subscription', path: '/settings' },
+                  ...(FEATURES.PREMIUM ? [{ icon: CreditCard, label: 'Subscription', path: '/settings' }] : []),
                 ].map(({ icon: Icon, label, path }) => (
                   <Link
                     key={label}

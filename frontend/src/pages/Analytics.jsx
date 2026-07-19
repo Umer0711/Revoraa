@@ -5,7 +5,6 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { TrendingUp, Activity, BarChart2, Target, Loader2, CheckCircle2, Lock } from 'lucide-react';
-import { usePermissions } from '../lib/permissions';
 import { useAuth } from '../contexts/AuthContext';
 import { getAnalyticsData, getActivityHistory } from '../lib/dataService';
 import { ActivityCalendar } from '../components/ui/ActivityCalendar';
@@ -37,16 +36,7 @@ const AccentBar = ({ color }) => (
 );
 
 
-const PremiumPageLock = ({ title, description }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', padding: '2rem' }}>
-    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,184,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-      <Lock size={32} color="var(--color-primary)" />
-    </div>
-    <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '1rem', letterSpacing: '-0.03em' }}>{title}</h2>
-    <p className="text-secondary" style={{ maxWidth: 400, marginBottom: '2rem', lineHeight: 1.6 }}>{description}</p>
-    <a href="/pricing" className="btn btn-primary" style={{ padding: '0.75rem 2rem', fontSize: '1rem', textDecoration: 'none' }}>Upgrade to Pro</a>
-  </div>
-);
+
 
 const StatCard = ({ label, value, sub, color }) => (
   <motion.div variants={item} whileHover={{ y: -3 }} className="bento-card col-span-1" style={{ position: 'relative' }}>
@@ -59,7 +49,6 @@ const StatCard = ({ label, value, sub, color }) => (
 
 export function Analytics() {
   const { user } = useAuth();
-  const { isPro } = usePermissions();
   const [data, setData]     = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,21 +113,7 @@ export function Analytics() {
   const totalSessions = new Set(history.map(h => h.activity_date)).size;
 
   
-  if (!isPro) {
-    return (
-      <div style={{ paddingBottom: '3rem' }}>
-      <SEO title="Analytics" url="https://revoraa.com/analytics" />
-        <header className="page-header">
-          <h1>Analytics</h1>
-          <p className="text-secondary">Deep insights into your practice patterns and retention.</p>
-        </header>
-        <PremiumPageLock 
-          title="Advanced Analytics" 
-          description="Unlock deep insights, topic mastery radar, difficulty breakdown, and long-term retention metrics with a Pro subscription."
-        />
-      </div>
-    );
-  }
+
 
   if (loading) {
     return (

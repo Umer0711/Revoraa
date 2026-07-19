@@ -245,7 +245,7 @@ export async function saveSolvedProblem({ problemData, problemId, solveTimeMinut
     .insert({
       user_id: userId,
       solved_problem_id: solved.id,
-      revision_number: 1,
+      revision_number: 0,
       next_revision_date: getInitialRevisionDate(),
       interval_days: 1,
       ease_factor: 2.5,
@@ -308,7 +308,11 @@ export async function getUserProblems(userId, { query = '', difficulty = 'All', 
  * Get revisions due today or overdue for a user.
  */
 export async function getTodayRevisions(userId) {
-  const today = new Date().toISOString().split('T')[0];
+  const localDate = new Date();
+  const yyyy = localDate.getFullYear();
+  const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(localDate.getDate()).padStart(2, '0');
+  const today = `${yyyy}-${mm}-${dd}`;
 
   const { data, error } = await supabase
     .from('revision_schedule')
@@ -353,7 +357,7 @@ export async function submitRevision({ userId, scheduleId, solvedProblemId, resu
     .insert({
       user_id: userId,
       solved_problem_id: solvedProblemId,
-      revision_number: next.revisionNumber + 1,
+      revision_number: next.revisionNumber,
       next_revision_date: next.nextDate,
       interval_days: next.intervalDays,
       ease_factor: next.easeFactor,
