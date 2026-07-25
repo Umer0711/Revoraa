@@ -48,7 +48,18 @@ export function DSAAtlas() {
             id: t.id,
             topic: t.name,
             description: t.description,
-            patterns: patterns.filter(p => p.topic_id === t.id)
+            patterns: patterns.filter(p => p.topic_id === t.id).map(p => ({
+              ...p,
+              whenToUse: p.when_to_use,
+              timeComplexity: p.time_complexity,
+              spaceComplexity: p.space_complexity,
+              recognitionTips: p.recognition_tips || [],
+              commonMistakes: p.common_mistakes || [],
+              visualExample: p.visual_example,
+              interviewFrequency: p.interview_frequency,
+              relatedProblems: p.related_problems || [],
+              companies: p.companies || []
+            }))
           };
         });
 
