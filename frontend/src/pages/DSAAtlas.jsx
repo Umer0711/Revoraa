@@ -1,0 +1,240 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, ChevronDown, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb } from 'lucide-react';
+import { DSA_ATLAS_DATA } from '../lib/dsaAtlasData';
+import './DSAAtlas.css';
+
+const FILTERS = ['All', 'Beginner', 'Intermediate', 'Advanced', 'Easy', 'Medium', 'Hard'];
+
+const DifficultyBadge = ({ difficulty }) => {
+  let badgeClass = 'badge-success';
+  if (difficulty === 'Medium' || difficulty === 'Intermediate') badgeClass = 'badge-warning';
+  if (difficulty === 'Hard' || difficulty === 'Advanced') badgeClass = 'badge-danger';
+  return <span className={`badge ${badgeClass}`}>{difficulty}</span>;
+};
+
+export function DSAAtlas() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [expandedTopics, setExpandedTopics] = useState(
+    DSA_ATLAS_DATA.reduce((acc, topic) => ({ ...acc, [topic.id]: true }), {})
+  );
+  const [selectedPattern, setSelectedPattern] = useState(null);
+
+  // Close drawer on escape
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && selectedPattern) {
+        setSelectedPattern(null);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedPattern]);
+
+  const toggleTopic = (id) => {
+    setExpandedTopics((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Filter data
+  const filteredData = useMemo(() => {
+    let result = DSA_ATLAS_DATA.map(topic => {
+      let filteredPatterns = topic.patterns.filter(pattern => {
+        // Search match (name or overview)
+        const matchesSearch = pattern.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              pattern.overview.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              topic.topic.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Filter match
+        let matchesFilter = true;
+        if (activeFilter !== 'All') {
+          matchesFilter = pattern.difficulty === activeFilter;
+        }
+
+        return matchesSearch && matchesFilter;
+      });
+      return { ...topic, patterns: filteredPatterns };
+    });
+
+    // Remove topics with 0 patterns
+    return result.filter(topic => topic.patterns.length > 0);
+  }, [searchQuery, activeFilter]);
+
+  return (
+    <div className="dsa-atlas-container">
+      <div className="page-header">
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <BookOpen size={32} color="var(--color-primary)" />
+          DSA Atlas
+        </h1>
+        <p className="text-muted">An interactive encyclopedia of data structures, algorithms, and patterns.</p>
+      </div>
+
+      <div className="dsa-atlas-controls">
+        <div className="dsa-search-wrapper">
+          <Search size={18} className="dsa-search-icon" />
+          <input
+            type="text"
+            className="dsa-search-input"
+            placeholder="Search topics, patterns, or algorithms..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="dsa-filters">
+          {FILTERS.map(filter => (
+            <button
+              key={filter}
+              className={`dsa-filter-btn ${activeFilter === filter ? 'active' : ''}`}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {filteredData.length === 0 ? (
+        <div className="empty-state bento-card">
+          <Target size={48} color="var(--color-text-muted)" style={{ opacity: 0.3, marginBottom: '1rem' }} />
+          <h3>No patterns found</h3>
+          <p>Try adjusting your search or filters.</p>
+          <button className="btn btn-secondary" style={{ marginTop: '1.5rem' }} onClick={() => {setSearchQuery(''); setActiveFilter('All');}}>
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <div className="dsa-topics-list">
+          {filteredData.map(topic => (
+            <div key={topic.id} className="dsa-topic-card">
+              <div className="dsa-topic-header" onClick={() => toggleTopic(topic.id)}>
+                <div className="dsa-topic-title-group">
+                  <div style={{ padding: '0.5rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                    {expandedTopics[topic.id] ? <ChevronDown size={18} color="var(--color-text-secondary)" /> : <ChevronRight size={18} color="var(--color-text-secondary)" />}
+                  </div>
+                  <div>
+                    <div className="dsa-topic-title">{topic.topic}</div>
+                    <div className="dsa-topic-desc">{topic.description}</div>
+                  </div>
+                </div>
+                <div className="badge badge-info">{topic.patterns.length} Patterns</div>
+              </div>
+
+              <AnimatePresence>
+                {expandedTopics[topic.id] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="dsa-patterns-grid">
+                      {topic.patterns.map(pattern => (
+                        <div key={pattern.id} className="dsa-pattern-card" onClick={() => setSelectedPattern({ ...pattern, parentTopic: topic.topic })}>
+                          <div className="dsa-pattern-header">
+                            <span className="dsa-pattern-name">{pattern.name}</span>
+                            <DifficultyBadge difficulty={pattern.difficulty} />
+                          </div>
+                          <div className="dsa-pattern-overview">{pattern.overview}</div>
+                          <div className="dsa-pattern-footer">
+                            <span className="dsa-freq-badge">{pattern.interviewFrequency} Freq</span>
+                            <ChevronRight size={14} color="var(--color-text-secondary)" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Slide Over Drawer for Pattern Details */}
+      <AnimatePresence>
+        {selectedPattern && (
+          <div className="dsa-drawer-backdrop" onClick={() => setSelectedPattern(null)}>
+            <motion.div
+              className="dsa-drawer"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="dsa-drawer-header">
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                    {selectedPattern.parentTopic}
+                  </div>
+                  <h2 style={{ marginBottom: '0.5rem' }}>{selectedPattern.name}</h2>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <DifficultyBadge difficulty={selectedPattern.difficulty} />
+                    <span className="badge badge-info">{selectedPattern.interviewFrequency} Frequency</span>
+                  </div>
+                </div>
+                <button className="dsa-drawer-close" onClick={() => setSelectedPattern(null)}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="dsa-drawer-content">
+                <div className="dsa-text-body" style={{ fontSize: '1.1rem', color: 'var(--color-text-primary)' }}>
+                  {selectedPattern.overview}
+                </div>
+
+                <div className="dsa-section-title"><Info size={16} /> Explanation</div>
+                <div className="dsa-text-body">{selectedPattern.explanation}</div>
+
+                <div className="dsa-section-title"><Target size={16} /> When to use</div>
+                <div className="dsa-text-body">{selectedPattern.whenToUse}</div>
+
+                <div className="dsa-stats-grid">
+                  <div className="dsa-stat-box">
+                    <div className="dsa-stat-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={14} /> Time Complexity
+                    </div>
+                    <div className="dsa-stat-value text-primary-accent">{selectedPattern.timeComplexity}</div>
+                  </div>
+                  <div className="dsa-stat-box">
+                    <div className="dsa-stat-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Cpu size={14} /> Space Complexity
+                    </div>
+                    <div className="dsa-stat-value text-primary-accent">{selectedPattern.spaceComplexity}</div>
+                  </div>
+                </div>
+
+                <div className="dsa-section-title"><Lightbulb size={16} /> Recognition Tips</div>
+                <ul className="dsa-list">
+                  {selectedPattern.recognitionTips.map((tip, idx) => <li key={idx}>{tip}</li>)}
+                </ul>
+
+                <div className="dsa-section-title"><AlertTriangle size={16} color="var(--color-mistakes)" /> Common Mistakes</div>
+                <ul className="dsa-list">
+                  {selectedPattern.commonMistakes.map((mistake, idx) => <li key={idx}>{mistake}</li>)}
+                </ul>
+
+                <div className="dsa-section-title">Visual Example</div>
+                <div className="dsa-code-block">{selectedPattern.visualExample}</div>
+
+                <div className="dsa-section-title"><BookOpen size={16} /> Related Problems</div>
+                <div className="dsa-tags">
+                  {selectedPattern.relatedProblems.map(prob => <span key={prob} className="dsa-tag">{prob}</span>)}
+                </div>
+
+                <div className="dsa-section-title"><Building2 size={16} /> Commonly Asked By</div>
+                <div className="dsa-tags">
+                  {selectedPattern.companies.map(comp => <span key={comp} className="dsa-tag" style={{ borderStyle: 'dashed' }}>{comp}</span>)}
+                </div>
+                
+                <div style={{ height: '40px' }} />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

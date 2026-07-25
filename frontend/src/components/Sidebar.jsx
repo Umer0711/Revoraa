@@ -7,7 +7,7 @@ import {
   Target, TrendingUp, Hash, AlertCircle,
   Award, Zap, CheckSquare, Settings, HelpCircle,
   Flame, Bell, User, LogOut, CreditCard, Star,
-  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw, Shield
+  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw, Shield, Compass
 } from 'lucide-react';
 import { RevoraaLogo } from './RevoraaLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,7 @@ const navMain = [
   { path: '/library', label: 'Problem Library', icon: Library },
   { path: '/revision', label: "Today's Revision", icon: CalendarCheck },
   { path: '/roadmap', label: 'Roadmap', icon: Map },
+  { path: '/dsa-atlas', label: 'DSA Atlas', icon: Compass },
 ];
 
 const navInsights = [

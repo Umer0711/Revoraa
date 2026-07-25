@@ -21,6 +21,7 @@ const Notifications   = lazy(() => import('./pages/Notifications').then(module =
 const Settings        = lazy(() => import('./pages/Settings').then(module => ({ default: module.Settings })));
 const Shop            = lazy(() => import('./pages/Shop').then(module => ({ default: module.Shop })));
 const Roadmap         = lazy(() => import('./pages/Roadmap').then(module => ({ default: module.Roadmap })));
+const DSAAtlas        = lazy(() => import('./pages/DSAAtlas').then(module => ({ default: module.DSAAtlas })));
 const Readiness       = lazy(() => import('./pages/Readiness').then(module => ({ default: module.Readiness })));
 const Patterns        = lazy(() => import('./pages/Patterns').then(module => ({ default: module.Patterns })));
 const Mistakes        = lazy(() => import('./pages/Mistakes').then(module => ({ default: module.Mistakes })));
@@ -127,6 +128,7 @@ const AnimatedRoutes = () => {
           <Route path="/profile"       element={<ProtectedRoute><PageWrapper><Profile /></PageWrapper></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><PageWrapper><Notifications /></PageWrapper></ProtectedRoute>} />
           <Route path="/roadmap"       element={<ProtectedRoute><PageWrapper><Roadmap /></PageWrapper></ProtectedRoute>} />
+          <Route path="/dsa-atlas"     element={<ProtectedRoute><PageWrapper><DSAAtlas /></PageWrapper></ProtectedRoute>} />
           <Route path="/readiness"     element={<ProtectedRoute><PageWrapper><Readiness /></PageWrapper></ProtectedRoute>} />
           <Route path="/patterns"      element={<ProtectedRoute><PageWrapper><Patterns /></PageWrapper></ProtectedRoute>} />
           <Route path="/mistakes"      element={<ProtectedRoute><PageWrapper><Mistakes /></PageWrapper></ProtectedRoute>} />
