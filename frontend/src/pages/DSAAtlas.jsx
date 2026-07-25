@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb } from 'lucide-react';
-import { DSA_ATLAS_DATA } from '../lib/dsaAtlasData';
+import { Search, ChevronDown, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb, Loader } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 import './DSAAtlas.css';
 
 const FILTERS = ['All', 'Beginner', 'Intermediate', 'Advanced', 'Easy', 'Medium', 'Hard'];
@@ -16,10 +16,57 @@ const DifficultyBadge = ({ difficulty }) => {
 export function DSAAtlas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [expandedTopics, setExpandedTopics] = useState(
-    DSA_ATLAS_DATA.reduce((acc, topic) => ({ ...acc, [topic.id]: true }), {})
-  );
+  const [topicsData, setTopicsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [expandedTopics, setExpandedTopics] = useState({});
   const [selectedPattern, setSelectedPattern] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch topics
+        const { data: topics, error: topicsErr } = await supabase
+          .from('dsa_atlas_topics')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (topicsErr) throw topicsErr;
+
+        // Fetch patterns
+        const { data: patterns, error: patternsErr } = await supabase
+          .from('dsa_atlas_patterns')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (patternsErr) throw patternsErr;
+
+        // Map patterns to topics
+        const mappedData = topics.map(t => {
+          return {
+            id: t.id,
+            topic: t.name,
+            description: t.description,
+            patterns: patterns.filter(p => p.topic_id === t.id)
+          };
+        });
+
+        setTopicsData(mappedData);
+        
+        // Expand all initially
+        setExpandedTopics(
+          mappedData.reduce((acc, topic) => ({ ...acc, [topic.id]: true }), {})
+        );
+      } catch (err) {
+        console.error('Error fetching DSA Atlas data:', err);
+        setError('Failed to load data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Close drawer on escape
   useEffect(() => {
@@ -38,7 +85,7 @@ export function DSAAtlas() {
 
   // Filter data
   const filteredData = useMemo(() => {
-    let result = DSA_ATLAS_DATA.map(topic => {
+    let result = topicsData.map(topic => {
       let filteredPatterns = topic.patterns.filter(pattern => {
         // Search match (name or overview)
         const matchesSearch = pattern.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,7 +105,7 @@ export function DSAAtlas() {
 
     // Remove topics with 0 patterns
     return result.filter(topic => topic.patterns.length > 0);
-  }, [searchQuery, activeFilter]);
+  }, [searchQuery, activeFilter, topicsData]);
 
   return (
     <div className="dsa-atlas-container">
@@ -94,7 +141,18 @@ export function DSAAtlas() {
         </div>
       </div>
 
-      {filteredData.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem 0', color: 'var(--color-text-muted)' }}>
+          <Loader size={32} className="spin" style={{ marginBottom: '1rem' }} />
+          <p>Loading taxonomy...</p>
+        </div>
+      ) : error ? (
+        <div className="empty-state bento-card">
+          <AlertTriangle size={48} color="var(--color-danger)" style={{ opacity: 0.8, marginBottom: '1rem' }} />
+          <h3>Error loading data</h3>
+          <p>{error}</p>
+        </div>
+      ) : filteredData.length === 0 ? (
         <div className="empty-state bento-card">
           <Target size={48} color="var(--color-text-muted)" style={{ opacity: 0.3, marginBottom: '1rem' }} />
           <h3>No patterns found</h3>
