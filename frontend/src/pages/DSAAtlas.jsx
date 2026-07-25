@@ -19,7 +19,7 @@ export function DSAAtlas() {
   const [topicsData, setTopicsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedTopics, setExpandedTopics] = useState({});
+  const [activeTopicId, setActiveTopicId] = useState(null);
   const [selectedPattern, setSelectedPattern] = useState(null);
 
   useEffect(() => {
@@ -64,11 +64,9 @@ export function DSAAtlas() {
         });
 
         setTopicsData(mappedData);
-        
-        // Expand all initially
-        setExpandedTopics(
-          mappedData.reduce((acc, topic) => ({ ...acc, [topic.id]: true }), {})
-        );
+        if (mappedData.length > 0) {
+          setActiveTopicId(mappedData[0].id);
+        }
       } catch (err) {
         console.error('Error fetching DSA Atlas data:', err);
         setError('Failed to load data.');
@@ -90,33 +88,26 @@ export function DSAAtlas() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [selectedPattern]);
 
-  const toggleTopic = (id) => {
-    setExpandedTopics((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Filter data for the active topic only
+  const filteredPatterns = useMemo(() => {
+    if (!activeTopicId || !topicsData.length) return [];
+    
+    const activeTopic = topicsData.find(t => t.id === activeTopicId);
+    if (!activeTopic) return [];
 
-  // Filter data
-  const filteredData = useMemo(() => {
-    let result = topicsData.map(topic => {
-      let filteredPatterns = topic.patterns.filter(pattern => {
-        // Search match (name or overview)
-        const matchesSearch = pattern.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              pattern.overview.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              topic.topic.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        // Filter match
-        let matchesFilter = true;
-        if (activeFilter !== 'All') {
-          matchesFilter = pattern.difficulty === activeFilter;
-        }
-
-        return matchesSearch && matchesFilter;
-      });
-      return { ...topic, patterns: filteredPatterns };
+    return activeTopic.patterns.filter(pattern => {
+      const matchesSearch = pattern.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            pattern.overview.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      let matchesFilter = true;
+      if (activeFilter !== 'All') {
+        matchesFilter = pattern.difficulty === activeFilter;
+      }
+      return matchesSearch && matchesFilter;
     });
+  }, [searchQuery, activeFilter, topicsData, activeTopicId]);
 
-    // Remove topics with 0 patterns
-    return result.filter(topic => topic.patterns.length > 0);
-  }, [searchQuery, activeFilter, topicsData]);
+  const activeTopic = topicsData.find(t => t.id === activeTopicId);
 
   return (
     <div className="dsa-atlas-container">
@@ -163,61 +154,58 @@ export function DSAAtlas() {
           <h3>Error loading data</h3>
           <p>{error}</p>
         </div>
-      ) : filteredData.length === 0 ? (
-        <div className="empty-state bento-card">
-          <Target size={48} color="var(--color-text-muted)" style={{ opacity: 0.3, marginBottom: '1rem' }} />
-          <h3>No patterns found</h3>
-          <p>Try adjusting your search or filters.</p>
-          <button className="btn btn-secondary" style={{ marginTop: '1.5rem' }} onClick={() => {setSearchQuery(''); setActiveFilter('All');}}>
-            Clear Filters
-          </button>
-        </div>
       ) : (
-        <div className="dsa-topics-list">
-          {filteredData.map(topic => (
-            <div key={topic.id} className="dsa-topic-card">
-              <div className="dsa-topic-header" onClick={() => toggleTopic(topic.id)}>
-                <div className="dsa-topic-title-group">
-                  <div style={{ padding: '0.5rem', background: 'var(--color-bg-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
-                    {expandedTopics[topic.id] ? <ChevronDown size={18} color="var(--color-text-secondary)" /> : <ChevronRight size={18} color="var(--color-text-secondary)" />}
-                  </div>
-                  <div>
-                    <div className="dsa-topic-title">{topic.topic}</div>
-                    <div className="dsa-topic-desc">{topic.description}</div>
-                  </div>
-                </div>
-                <div className="badge badge-info">{topic.patterns.length} Patterns</div>
+        <div className="dsa-atlas-layout">
+          {/* Sidebar */}
+          <div className="dsa-sidebar">
+            {topicsData.map(topic => (
+              <div 
+                key={topic.id} 
+                className={`dsa-sidebar-item ${activeTopicId === topic.id ? 'active' : ''}`}
+                onClick={() => setActiveTopicId(topic.id)}
+              >
+                <span>{topic.topic}</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>{topic.patterns.length}</span>
               </div>
+            ))}
+          </div>
 
-              <AnimatePresence>
-                {expandedTopics[topic.id] && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="dsa-patterns-grid">
-                      {topic.patterns.map(pattern => (
-                        <div key={pattern.id} className="dsa-pattern-card" onClick={() => setSelectedPattern({ ...pattern, parentTopic: topic.topic })}>
-                          <div className="dsa-pattern-header">
-                            <span className="dsa-pattern-name">{pattern.name}</span>
-                            <DifficultyBadge difficulty={pattern.difficulty} />
-                          </div>
-                          <div className="dsa-pattern-overview">{pattern.overview}</div>
-                          <div className="dsa-pattern-footer">
-                            <span className="dsa-freq-badge">{pattern.interviewFrequency} Freq</span>
-                            <ChevronRight size={14} color="var(--color-text-secondary)" />
-                          </div>
-                        </div>
-                      ))}
+          {/* Main Content */}
+          <div className="dsa-main-content">
+            {activeTopic && (
+              <div className="dsa-topic-header">
+                <h2 className="dsa-topic-title">{activeTopic.topic} Patterns</h2>
+                <p className="dsa-topic-desc">{activeTopic.description}</p>
+              </div>
+            )}
+
+            {filteredPatterns.length === 0 ? (
+              <div className="empty-state bento-card" style={{ marginTop: 0 }}>
+                <Target size={48} color="var(--color-text-muted)" style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                <h3>No patterns found</h3>
+                <p>Try adjusting your search or filters.</p>
+                <button className="btn btn-secondary" style={{ marginTop: '1.5rem' }} onClick={() => {setSearchQuery(''); setActiveFilter('All');}}>
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <div className="dsa-patterns-grid">
+                {filteredPatterns.map(pattern => (
+                  <div key={pattern.id} className="dsa-pattern-card" onClick={() => setSelectedPattern({ ...pattern, parentTopic: activeTopic?.topic })}>
+                    <div className="dsa-pattern-header">
+                      <span className="dsa-pattern-name">{pattern.name}</span>
+                      <DifficultyBadge difficulty={pattern.difficulty} />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
+                    <div className="dsa-pattern-overview">{pattern.overview}</div>
+                    <div className="dsa-pattern-footer">
+                      <span className="dsa-freq-badge">{pattern.interviewFrequency} Freq</span>
+                      <ChevronRight size={14} color="var(--color-text-secondary)" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
