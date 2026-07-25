@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronDown, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import './DSAAtlas.css';
+import { MacCodeTerminal } from '../components/MacCodeTerminal';
 
 const FILTERS = ['All', 'Beginner', 'Intermediate', 'Advanced', 'Easy', 'Medium', 'Hard'];
 
@@ -191,7 +192,11 @@ export function DSAAtlas() {
             ) : (
               <div className="dsa-patterns-grid">
                 {filteredPatterns.map(pattern => (
-                  <div key={pattern.id} className="dsa-pattern-card" onClick={() => setSelectedPattern({ ...pattern, parentTopic: activeTopic?.topic })}>
+                  <div 
+                    key={pattern.id} 
+                    className={`dsa-pattern-card ${pattern.interviewFrequency === 'High' || pattern.interviewFrequency === 'Very High' ? 'bento-large' : ''}`}
+                    onClick={() => setSelectedPattern({ ...pattern, parentTopic: activeTopic?.topic })}
+                  >
                     <div className="dsa-pattern-header">
                       <span className="dsa-pattern-name">{pattern.name}</span>
                       <DifficultyBadge difficulty={pattern.difficulty} />
@@ -274,7 +279,7 @@ export function DSAAtlas() {
                 </ul>
 
                 <div className="dsa-section-title">Visual Example</div>
-                <div className="dsa-code-block">{selectedPattern.visualExample}</div>
+                <MacCodeTerminal code={selectedPattern.visualExample} />
 
                 <div className="dsa-section-title"><BookOpen size={16} /> Related Problems</div>
                 <div className="dsa-tags">
