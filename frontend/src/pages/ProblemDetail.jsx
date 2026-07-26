@@ -180,8 +180,6 @@ export function ProblemDetail() {
   }
 
   const p = problem.problem || {};
-  const tags = p.problem_tags?.map(t => t.tag).join(', ') || 'No Pattern';
-  const company = p.problem_companies?.[0]?.company?.name || 'No Company';
   const platform = p.coding_platforms;
   const nextRev = problem.revision_schedule?.[0]?.next_revision_date;
   const revLabel = formatNextRevision(nextRev);

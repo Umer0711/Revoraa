@@ -1,24 +1,45 @@
-# Logs
+# Environment Variables & Secrets
+.env
+.env.*
+*.env
+
+# Dependencies & Build Outputs
+node_modules
+dist
+dist-ssr
+coverage
+
+# Logs & Temporary Files
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
+*.bak
+*.temp
 
-node_modules
-dist
-dist-ssr
-*.local
+# Local scratch and datasets (NEVER COMMIT DATASETS OR SCRATCH REPOS)
+scratch/
+scratch_*
+*.csv
+*.json.bak
 
-# Editor directories and files
+# One-off root scratch scripts
+apply_interview_migration.cjs
+apply_migration.cjs
+check_*.cjs
+db_audit.cjs
+debug_sql.cjs
+get_*.cjs
+make_admin.cjs
+query_subs.cjs
+run_*.cjs
+test_*.cjs
+
+# Editor directories
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?

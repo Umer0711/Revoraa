@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useTransition } from 'react';
 import { 
   X, ExternalLink, CheckCircle2, Zap, SkipForward, BookOpen, Loader2, RefreshCw, 
   Library, CalendarClock, Search, Flame, Grid, List, BrainCircuit, Book
@@ -45,6 +45,7 @@ const confBadge = (conf) => {
 export function Revision() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [, startTransition] = useTransition();
 
   const [activeTab, setActiveTab] = useState('due_today');
 
@@ -447,10 +448,28 @@ export function Revision() {
         <div className="bento-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="input-group" style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
             <Search size={16} className="text-muted" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" className="input-field" placeholder="Search by title, number, pattern..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', paddingLeft: '2.5rem', background: 'var(--color-bg-glass)', border: 'none' }} />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Search by title, number, pattern..."
+              value={searchQuery}
+              onChange={e => {
+                const v = e.target.value;
+                startTransition(() => setSearchQuery(v));
+              }}
+              style={{ width: '100%', paddingLeft: '2.5rem', background: 'var(--color-bg-glass)', border: 'none' }}
+            />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <select className="input" style={{ width: 'auto', padding: '0.5rem 1rem' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+            <select
+              className="input"
+              style={{ width: 'auto', padding: '0.5rem 2.5rem 0.5rem 1rem' }}
+              value={sortOrder}
+              onChange={e => {
+                const v = e.target.value;
+                startTransition(() => setSortOrder(v));
+              }}
+            >
               <option>Newest</option>
               <option>Oldest</option>
               <option>Highest Confidence</option>

@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Activity, Users, Database, Shield, CreditCard, Server, AlertTriangle, ArrowUpRight, ArrowDownRight, RefreshCw, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { SEO } from '../components/SEO';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export function AdminMonitoring() {
   const [stats, setStats] = useState(null);

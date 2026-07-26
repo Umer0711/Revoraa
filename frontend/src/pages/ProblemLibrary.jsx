@@ -134,16 +134,35 @@ export function ProblemLibrary() {
               type="text"
               placeholder="Search by #, title, pattern…"
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => {
+                const v = e.target.value;
+                startTransition(() => setQuery(v));
+              }}
               style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', outline: 'none', fontSize: '0.875rem', width: '100%', fontFamily: 'inherit' }}
               aria-label="Search problems"
             />
             {query && (
-              <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}>
+              <button onClick={() => startTransition(() => setQuery(''))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex' }}>
                 <X size={14} />
               </button>
             )}
           </div>
+
+          {/* Difficulty Dropdown Select with custom down arrow mark */}
+          <select
+            className="select-filter"
+            value={diffFilter}
+            onChange={e => {
+              const v = e.target.value;
+              startTransition(() => setDiffFilter(v));
+            }}
+            style={{ padding: '0.45rem 2.5rem 0.45rem 0.875rem', fontSize: '0.82rem', height: '100%' }}
+          >
+            <option value="All">All Difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
 
           {/* Difficulty filter pills */}
           {['All', 'Easy', 'Medium', 'Hard'].map(d => (
@@ -151,7 +170,7 @@ export function ProblemLibrary() {
               key={d}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
-              onClick={() => setDiffFilter(d)}
+              onClick={() => startTransition(() => setDiffFilter(d))}
               className="btn"
               style={{
                 padding: '0.45rem 0.875rem',

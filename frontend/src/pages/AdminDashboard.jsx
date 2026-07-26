@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Ticket, CreditCard, Search, Shield, Ban, Activity, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, Ticket, CreditCard, Search, Shield, Ban, Activity, Loader2, AlertTriangle, Database } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { SEO } from '../components/SEO';
-
+import { parseDatasetInput, analyzeDatasetBatch, executeDatasetImport } from '../lib/importPipeline';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: Activity },
@@ -12,6 +12,7 @@ const tabs = [
   { id: 'billing', label: 'Billing Logs', icon: CreditCard },
   { id: 'audit', label: 'Audit Logs', icon: Shield },
   { id: 'bugs', label: 'Bug Reports', icon: AlertTriangle },
+  { id: 'importer', label: 'Dataset Importer', icon: Database },
   { id: 'monitoring', label: 'Monitoring', icon: Activity, href: '/admin/monitoring' },
 ];
 
@@ -28,6 +29,11 @@ export function AdminDashboard() {
 
   // Search/Filter
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Importer state
+  const [importInput, setImportInput] = useState('');
+  const [importReport, setImportReport] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Modals/Forms
   const [showCouponForm, setShowCouponForm] = useState(false);
@@ -552,6 +558,78 @@ export function AdminDashboard() {
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>No bug reports found.</div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* DATASET IMPORTER TAB */}
+            {activeTab === 'importer' && (
+              <div>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', margin: 0 }}>Company-Wise Interview Question Importer</h2>
+                <p className="text-muted" style={{ fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+                  Import, validate, normalize, and detect duplicate interview questions from the Snehasish Roy repository dataset.
+                </p>
+
+                <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--color-border-subtle)', marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>Raw CSV or JSON Dataset Input</label>
+                  <textarea
+                    rows={6}
+                    placeholder={`Title, Difficulty, Company, Topic, URL\nTwo Sum, Easy, Google, Arrays, https://leetcode.com/problems/two-sum/\n3Sum, Medium, Amazon, Two Pointers, https://leetcode.com/problems/3sum/`}
+                    value={importInput}
+                    onChange={e => setImportInput(e.target.value)}
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#090d16', color: '#ffffff', fontFamily: 'monospace', fontSize: '0.85rem' }}
+                  />
+
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={async () => {
+                        const parsed = parseDatasetInput(importInput);
+                        const report = await analyzeDatasetBatch(parsed);
+                        setImportReport(report);
+                      }}
+                    >
+                      Preview & Validate Batch
+                    </button>
+
+                    <button
+                      className="btn btn-primary"
+                      disabled={isImporting}
+                      onClick={async () => {
+                        setIsImporting(true);
+                        const parsed = parseDatasetInput(importInput);
+                        const res = await executeDatasetImport(parsed);
+                        setIsImporting(false);
+                        alert(`Import Completed! Questions: ${res.importedQuestions}, Companies: ${res.importedCompanies}`);
+                      }}
+                    >
+                      {isImporting ? 'Importing Dataset...' : 'Run Production Import'}
+                    </button>
+                  </div>
+                </div>
+
+                {importReport && (
+                  <div style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--color-border-subtle)' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>Validation & Batch Analysis Report</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }}>
+                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{importReport.totalRecords}</div>
+                        <div className="text-xs text-muted">Total Records</div>
+                      </div>
+                      <div style={{ background: 'rgba(16,185,129,0.1)', padding: '0.75rem', borderRadius: '8px', color: 'var(--color-success)' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{importReport.validRecords}</div>
+                        <div className="text-xs">Valid</div>
+                      </div>
+                      <div style={{ background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '8px', color: 'var(--color-mistakes)' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{importReport.invalidRecords}</div>
+                        <div className="text-xs">Invalid</div>
+                      </div>
+                      <div style={{ background: 'rgba(245,158,11,0.1)', padding: '0.75rem', borderRadius: '8px', color: 'var(--color-warning)' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 800 }}>{importReport.duplicateQuestions}</div>
+                        <div className="text-xs">Duplicates</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>

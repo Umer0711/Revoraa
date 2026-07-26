@@ -24,10 +24,10 @@ const navMain = [
   { path: '/revision', label: "Today's Revision", icon: CalendarCheck },
   { path: '/roadmap', label: 'Roadmap', icon: Map },
   { path: '/dsa-atlas', label: 'DSA Atlas', icon: Compass },
+  { path: '/readiness', label: 'Interview Readiness', icon: Target },
 ];
 
 const navInsights = [
-  { path: '/readiness', label: 'Interview Readiness', icon: Target },
   { path: '/analytics', label: 'Analytics', icon: TrendingUp },
   { path: '/patterns', label: 'Patterns', icon: Hash },
   { path: '/mistakes', label: 'Mistakes', icon: AlertCircle },

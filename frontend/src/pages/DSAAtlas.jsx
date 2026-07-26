@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronDown, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb, Loader } from 'lucide-react';
+import { Search, ChevronRight, X, BookOpen, Clock, Cpu, Info, Target, Building2, AlertTriangle, Lightbulb, Loader } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import './DSAAtlas.css';
 import { MacCodeTerminal } from '../components/MacCodeTerminal';
@@ -18,6 +18,7 @@ export function DSAAtlas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [topicsData, setTopicsData] = useState([]);
+  const [, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTopicId, setActiveTopicId] = useState(null);
@@ -128,7 +129,10 @@ export function DSAAtlas() {
             className="dsa-search-input"
             placeholder="Search topics, patterns, or algorithms..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              startTransition(() => setSearchQuery(v));
+            }}
           />
         </div>
         <div className="dsa-filters">
@@ -136,7 +140,7 @@ export function DSAAtlas() {
             <button
               key={filter}
               className={`dsa-filter-btn ${activeFilter === filter ? 'active' : ''}`}
-              onClick={() => setActiveFilter(filter)}
+              onClick={() => startTransition(() => setActiveFilter(filter))}
             >
               {filter}
             </button>

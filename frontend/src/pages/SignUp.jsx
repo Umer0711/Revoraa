@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Mail, GitMerge, Code2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Mail, GitMerge, Code2, ArrowLeft } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { AuthLayout } from '../components/AuthLayout';
 import { useAuth } from '../contexts/AuthContext';

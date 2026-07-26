@@ -1,10 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { RealtimeProvider } from './contexts/RealtimeContext';
+import { useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './contexts/ProtectedRoute';
-import { CheckCircle2, Circle, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlobalCelebrations } from './components/ui/GlobalCelebrations';
 import { WelcomeCelebration } from './components/ui/WelcomeCelebration';
