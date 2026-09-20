@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Activity, BarChart2, Target, Loader2, CheckCircle2, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getAnalyticsData, getActivityHistory } from '../lib/dataService';
+import { formatDuration } from '../lib/problemsService';
 import { ActivityCalendar } from '../components/ui/ActivityCalendar';
 import { SEO } from '../components/SEO';
 
@@ -35,14 +36,11 @@ const AccentBar = ({ color }) => (
   <div style={{ position: 'absolute', top: 0, left: '1.5rem', right: '1.5rem', height: '1px', background: `linear-gradient(to right, transparent, ${color}, transparent)`, opacity: 0.55 }} />
 );
 
-
-
-
 const StatCard = ({ label, value, sub, color }) => (
   <motion.div variants={item} whileHover={{ y: -3 }} className="bento-card col-span-1" style={{ position: 'relative' }}>
     <AccentBar color={color} />
     <p className="text-muted text-xs" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>{label}</p>
-    <div style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.04em', color }}>{value}</div>
+    <div style={{ fontSize: '1.85rem', fontWeight: 700, letterSpacing: '-0.03em', color }}>{value}</div>
     {sub && <p className="text-muted text-xs" style={{ marginTop: '0.25rem' }}>{sub}</p>}
   </motion.div>
 );
@@ -63,7 +61,7 @@ export function Analytics() {
         getActivityHistory(user.id, 365)
       ]);
       setData(result);
-      setHistory(hist);
+      setHistory(hist.length > 0 ? hist : (result?.history || []));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -71,16 +69,28 @@ export function Analytics() {
     }
   }, [user]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { 
+    fetchData(); 
 
-  // Build radar data from pattern counts
+    // Listen for problem solved/revised events to refresh analytics immediately
+    const onRefresh = () => fetchData();
+    window.addEventListener('REFETCH_ANALYTICS', onRefresh);
+    window.addEventListener('focus', onRefresh);
+    return () => {
+      window.removeEventListener('REFETCH_ANALYTICS', onRefresh);
+      window.removeEventListener('focus', onRefresh);
+    };
+  }, [fetchData]);
+
+  // Build radar data from topic/pattern counts
   const radarData = useMemo(() => {
     const topPatterns = data?.topPatterns ?? [];
     if (topPatterns.length === 0) return [];
-    const max = topPatterns[0]?.count ?? 1;
+    const max = Math.max(...topPatterns.map(p => p.count || p.solved || 1), 1);
     return topPatterns.slice(0, 8).map(p => ({
-      subject: p.category?.length > 10 ? p.category.slice(0, 10) + '…' : (p.category || 'Unknown'),
-      A: Math.round((p.count / max) * 100),
+      subject: p.category?.length > 12 ? p.category.slice(0, 12) + '…' : (p.category || 'Unknown'),
+      A: Math.round(((p.count || p.solved || 0) / max) * 100),
+      rawCount: p.count || p.solved || 0
     }));
   }, [data]);
 
@@ -92,34 +102,52 @@ export function Analytics() {
   
   // Platform distribution for pie
   const platformData = useMemo(() => {
-    const d = data?.advanced?.platform_distribution ?? {};
+    const d = data?.platformDistribution ?? data?.advanced?.platform_distribution ?? {};
     return Object.entries(d).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
   }, [data]);
 
   // Week activity chart
   const weekData = useMemo(() => {
     const daily = data?.daily ?? [];
-    const last7 = daily.slice(-7);
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return last7.map((d, i) => ({
-      name: days[i] ?? d.date.slice(-2),
-      solved: d.solved,
-      revised: d.revised,
+    return daily.slice(-7).map(d => ({
+      name: d.name || d.date?.slice(-2) || '—',
+      solved: d.solved || 0,
+      revised: d.revised || 0,
     }));
   }, [data]);
 
+  const summary = data?.summary ?? {};
   const stats = data?.stats ?? {};
   const advanced = data?.advanced ?? {};
-  const totalSessions = new Set(history.map(h => h.activity_date)).size;
-
   
+  const activeDaysCount = summary.active_days_this_year ?? (new Set(history.map(h => h.activity_date || h.date)).size);
 
+  // Authoritative duration and rate strings
+  const avgSolveTimeDisplay = summary.average_solve_time_seconds 
+    ? formatDuration(summary.average_solve_time_seconds) 
+    : (advanced.average_solve_time ? `${advanced.average_solve_time}m` : '—');
+
+  const avgRevisionTimeDisplay = summary.average_revision_time_seconds 
+    ? formatDuration(summary.average_revision_time_seconds) 
+    : (advanced.average_revision_time ? `${advanced.average_revision_time}m` : '—');
+
+  const fastestSolveDisplay = summary.fastest_solve_seconds 
+    ? formatDuration(summary.fastest_solve_seconds) 
+    : (advanced.fastest_solve ? `${advanced.fastest_solve}m` : '—');
+
+  const avgConfidenceDisplay = summary.average_confidence != null 
+    ? `${summary.average_confidence}/5` 
+    : (data?.avgConfidence && data.avgConfidence !== '—' ? `${data.avgConfidence}/5` : '—');
+
+  const revisionSuccessDisplay = summary.revision_success_rate != null 
+    ? `${summary.revision_success_rate}%` 
+    : (advanced.revision_success_rate != null ? `${advanced.revision_success_rate}%` : '—');
 
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem' }}>
         <Loader2 size={36} style={{ animation: 'spin 1s linear infinite', color: 'var(--color-primary)' }} />
-        <p className="text-secondary">Crunching your data…</p>
+        <p className="text-secondary">Calculating your analytics…</p>
       </div>
     );
   }
@@ -130,6 +158,7 @@ export function Analytics() {
 
   return (
     <div style={{ paddingBottom: '3rem' }}>
+      <SEO title="Analytics | Revoraa" description="Track your problem-solving analytics, streaks, retention rates, and topic mastery." />
       <header className="page-header">
         <h1>Analytics</h1>
         <p className="text-secondary">Deep insights into your practice patterns and retention.</p>
@@ -138,16 +167,16 @@ export function Analytics() {
       <motion.div className="bento-grid" variants={container} initial="hidden" animate="show">
 
         {/* Stats Row */}
-        <StatCard label="Total Solved"   value={stats.total_solved ?? 0}   sub="All time"              color="var(--color-analytics)" />
+        <StatCard label="Total Solved"   value={stats.total_solved ?? 0}   sub="Unique problems solved"  color="var(--color-analytics)" />
         <StatCard label="Total Revised"  value={stats.total_revised ?? 0}  sub="Revisions completed"   color="var(--color-strong)" />
         <StatCard label="Current Streak" value={`${stats.current_streak ?? 0}d`} sub={`Best: ${stats.longest_streak ?? 0}d`} color="var(--color-xp)" />
-        <StatCard label="Avg Confidence" value={`${data?.avgConfidence ?? '—'}/5`} sub="Self-rated"     color="var(--color-mission)" />
+        <StatCard label="Avg Confidence" value={avgConfidenceDisplay} sub={avgConfidenceDisplay === '—' ? 'No attempts yet' : 'Self-rated'} color="var(--color-mission)" />
         
         {/* Advanced Stats Row */}
-        <StatCard label="Avg Solve Time" value={advanced.average_solve_time ? `${advanced.average_solve_time}m` : '—'} sub="Initial attempt" color="var(--color-revision)" />
-        <StatCard label="Avg Revision Time" value={advanced.average_revision_time ? `${advanced.average_revision_time}m` : '—'} sub="Revision attempt" color="var(--color-analytics)" />
-        <StatCard label="Fastest Solve" value={advanced.fastest_solve ? `${advanced.fastest_solve}m` : '—'} sub="All time record" color="var(--color-strong)" />
-        <StatCard label="Revision Success" value={advanced.revision_success_rate ? `${advanced.revision_success_rate}%` : '—'} sub="Retention rate" color="var(--color-readiness)" />
+        <StatCard label="Avg Solve Time" value={avgSolveTimeDisplay} sub="Initial attempt" color="var(--color-revision)" />
+        <StatCard label="Avg Revision Time" value={avgRevisionTimeDisplay} sub="Revision attempt" color="var(--color-analytics)" />
+        <StatCard label="Fastest Solve" value={fastestSolveDisplay} sub="All time record" color="var(--color-strong)" />
+        <StatCard label="Revision Success" value={revisionSuccessDisplay} sub={revisionSuccessDisplay === '—' ? 'No revisions yet' : 'Retention rate'} color="var(--color-readiness)" />
 
         {/* Activity Heatmap */}
         <motion.div variants={item} whileHover={{ y: -3 }} className="bento-card col-span-4" style={{ position: 'relative' }}>
@@ -157,7 +186,7 @@ export function Analytics() {
               <Activity size={16} color="var(--color-analytics)" />
               <h3 style={{ marginBottom: 0 }}>Activity Heatmap</h3>
             </div>
-            <span className="text-muted text-sm">{totalSessions} active days this year</span>
+            <span className="text-muted text-sm">{activeDaysCount} active {activeDaysCount === 1 ? 'day' : 'days'} this year</span>
           </div>
           <ActivityCalendar history={history} days={365} />
         </motion.div>
@@ -175,6 +204,22 @@ export function Analytics() {
                 <PolarGrid stroke="var(--color-border-subtle)" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--color-text-secondary)', fontSize: 11 }} />
                 <PolarRadiusAxis tick={false} axisLine={false} />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="liquid-glass" style={{ padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-md)' }}>
+                          <p style={{ fontWeight: 650, fontSize: '0.85rem', color: 'var(--color-level)', margin: '0 0 0.2rem 0' }}>{d.subject}</p>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--color-text-primary)', margin: 0 }}>
+                            {d.rawCount} {d.rawCount === 1 ? 'problem solved' : 'problems solved'}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }} 
+                />
                 <Radar name="Problems" dataKey="A" stroke="var(--color-level)" fill="var(--color-level)" fillOpacity={0.18} isAnimationActive animationDuration={1200} />
               </RadarChart>
             </ResponsiveContainer>

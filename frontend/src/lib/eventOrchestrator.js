@@ -92,6 +92,9 @@ export async function onRevisionCompleted(userId, solvedProblemId, confidence) {
     // Step 4. Create Notification
     await notify(userId, 'Revision Complete', 'Great job! +10 XP', 'system');
 
+    // Step 5. Refresh Analytics
+    await updateAnalyticsCache(userId);
+
   } catch (error) {
     console.error('[Event Error] onRevisionCompleted failed:', error);
   }
@@ -125,6 +128,9 @@ export async function onManualRevisionCompleted(userId, problemId, result, confi
 
     // Step 4. Create Notification
     await notify(userId, 'Manual Practice Logged', 'Great practice! +5 XP', 'system');
+
+    // Step 5. Refresh Analytics
+    await updateAnalyticsCache(userId);
 
   } catch (error) {
     console.error('[Event Error] onManualRevisionCompleted failed:', error);
@@ -210,10 +216,9 @@ async function handleStreak(userId, activityType) {
 }
 
 async function updateAnalyticsCache(userId) {
-  // In a realtime architecture, analytics might just be calculated on read,
-  // but if we need a denormalized cache, we do it here.
-  // For now, Supabase triggers or live views handle this, so we just log.
-  console.log('[Event] Analytics dependencies flagged for refresh.');
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('REFETCH_ANALYTICS', { detail: { userId } }));
+  }
 }
 
 async function incrementDailyMission(userId, actionType) {

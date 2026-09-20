@@ -79,62 +79,269 @@ export async function getRevisionStats(userId) {
 
 /**
  * Get analytics data for the Analytics page.
+ * Uses the authoritative get_user_analytics RPC with timezone support,
+ * and falls back to real-time client-side calculation from solved_problems and revision_attempts.
  */
 export async function getAnalyticsData(userId) {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const since = thirtyDaysAgo.toISOString().split('T')[0];
+  if (!userId) return null;
 
-  const [dailyRes, statsRes, problemsRes, patternStatsRes, advAnalyticsRes] = await Promise.all([
-    supabase
-      .from('analytics_daily')
-      .select('date, solved, revised, accuracy, avg_time, xp_earned, confidence')
-      .eq('user_id', userId)
-      .gte('date', since)
-      .order('date', { ascending: true }),
-    supabase.from('user_stats').select('*').eq('user_id', userId).single(),
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+  // 1. Attempt authoritative RPC first
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_analytics', {
+      p_user_id: userId,
+      p_timezone: tz
+    });
+
+    if (!rpcError && rpcData && rpcData.summary) {
+      const s = rpcData.summary;
+      const diffDist = rpcData.difficulty_distribution || { Easy: 0, Medium: 0, Hard: 0 };
+      const platDist = rpcData.platform_distribution || {};
+      const topicDist = rpcData.topic_distribution || [];
+      const dailyAct = rpcData.daily_activity || [];
+      const last7 = rpcData.last_7_days || [];
+
+      return {
+        summary: s,
+        stats: {
+          total_solved: s.total_solved ?? 0,
+          total_revised: s.total_revised ?? 0,
+          current_streak: s.current_streak ?? 0,
+          longest_streak: s.longest_streak ?? 0,
+        },
+        advanced: {
+          average_solve_time: s.average_solve_time_seconds ? Math.round(s.average_solve_time_seconds / 60) : null,
+          average_revision_time: s.average_revision_time_seconds ? Math.round(s.average_revision_time_seconds / 60) : null,
+          fastest_solve: s.fastest_solve_seconds ? Math.round(s.fastest_solve_seconds / 60) : null,
+          revision_success_rate: s.revision_success_rate,
+          average_solve_time_seconds: s.average_solve_time_seconds,
+          average_revision_time_seconds: s.average_revision_time_seconds,
+          fastest_solve_seconds: s.fastest_solve_seconds,
+          platform_distribution: platDist,
+          difficulty_distribution: diffDist,
+        },
+        diffDistribution: diffDist,
+        platformDistribution: platDist,
+        topPatterns: topicDist.map(t => ({
+          category: t.name,
+          count: t.count || t.solved || 0,
+          solved: t.solved || 0,
+          revised: t.revised || 0
+        })),
+        avgConfidence: s.average_confidence != null ? s.average_confidence : '—',
+        daily: last7,
+        dailyActivity: dailyAct,
+        history: dailyAct
+      };
+    }
+  } catch (err) {
+    console.warn('RPC get_user_analytics unavailable or failed, falling back to direct table queries:', err.message);
+  }
+
+  // 2. Authoritative Client-side Fallback querying solved_problems and revision_attempts directly
+  const [solvedRes, attemptsRes, userStatsRes] = await Promise.all([
     supabase
       .from('solved_problems')
-      .select('status, confidence, solve_time_minutes, problem:problems(difficulty, problem_tags(tag))')
+      .select('id, problem_id, confidence, solve_time_minutes, user_pattern, created_at, problem:problems(id, title, difficulty, coding_platforms(name), problem_tags(tag))')
       .eq('user_id', userId)
       .is('deleted_at', null),
     supabase
-      .from('user_pattern_stats')
-      .select('*')
+      .from('revision_attempts')
+      .select('id, problem_id, attempt_type, attempt_number, duration_seconds, time_taken, confidence, result, created_at')
       .eq('user_id', userId)
-      .order('solved_count', { ascending: false })
-      .limit(8),
-    supabase.rpc('get_advanced_analytics', { p_user_id: userId })
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('user_stats')
+      .select('current_streak, longest_streak')
+      .eq('user_id', userId)
+      .maybeSingle()
   ]);
 
-  // Compute difficulty distribution
-  const problems = problemsRes.data ?? [];
-  const diffDistribution = { Easy: 0, Medium: 0, Hard: 0 };
+  const solvedProblems = solvedRes.data || [];
+  const attempts = attemptsRes.data || [];
 
-  problems.forEach(sp => {
+  // Unique problems solved
+  const uniqueProblemIds = new Set(solvedProblems.map(sp => sp.problem_id));
+  const totalSolved = uniqueProblemIds.size;
+
+  // Revisions count (non-initial)
+  const revisionAttempts = attempts.filter(a => a.attempt_type === 'scheduled_revision' || a.attempt_type === 'manual_revision');
+  const totalRevised = revisionAttempts.length;
+
+  // Average confidence
+  const allConfidenceValues = attempts.map(a => a.confidence).filter(c => c != null);
+  if (allConfidenceValues.length === 0) {
+    solvedProblems.forEach(sp => { if (sp.confidence != null) allConfidenceValues.push(sp.confidence); });
+  }
+  const avgConf = allConfidenceValues.length > 0
+    ? (allConfidenceValues.reduce((a, b) => a + b, 0) / allConfidenceValues.length).toFixed(1)
+    : '—';
+
+  // Initial solve times
+  const initialAttempts = attempts.filter(a => a.attempt_type === 'initial_solve');
+  const initialDurations = initialAttempts
+    .map(a => a.duration_seconds != null ? a.duration_seconds : (a.time_taken ? a.time_taken * 60 : null))
+    .filter(d => d != null && d > 0);
+  if (initialDurations.length === 0) {
+    solvedProblems.forEach(sp => {
+      if (sp.solve_time_minutes && sp.solve_time_minutes > 0) initialDurations.push(sp.solve_time_minutes * 60);
+    });
+  }
+  const avgSolveTimeSec = initialDurations.length > 0
+    ? Math.round(initialDurations.reduce((a, b) => a + b, 0) / initialDurations.length)
+    : null;
+
+  // Revision times
+  const revDurations = revisionAttempts
+    .map(a => a.duration_seconds != null ? a.duration_seconds : (a.time_taken ? a.time_taken * 60 : null))
+    .filter(d => d != null && d > 0);
+  const avgRevTimeSec = revDurations.length > 0
+    ? Math.round(revDurations.reduce((a, b) => a + b, 0) / revDurations.length)
+    : null;
+
+  // Fastest solve
+  const allDurations = [...initialDurations, ...revDurations];
+  const fastestSolveSec = allDurations.length > 0 ? Math.min(...allDurations) : null;
+
+  // Revision success rate
+  const ratedRevisions = revisionAttempts.filter(a => a.result != null);
+  const successfulRevisions = ratedRevisions.filter(a => a.result === 'easy' || a.result === 'mastered');
+  const revSuccessRate = ratedRevisions.length > 0
+    ? Math.round((successfulRevisions.length / ratedRevisions.length) * 100)
+    : null;
+
+  // Distributions
+  const diffDistribution = { Easy: 0, Medium: 0, Hard: 0 };
+  const platformDistribution = {};
+  const topicCounts = {};
+
+  solvedProblems.forEach(sp => {
     const diff = sp.problem?.difficulty;
     if (diff) diffDistribution[diff] = (diffDistribution[diff] || 0) + 1;
+
+    const plat = sp.problem?.coding_platforms?.name || 'Custom';
+    platformDistribution[plat] = (platformDistribution[plat] || 0) + 1;
+
+    const topic = sp.user_pattern || sp.problem?.problem_tags?.[0]?.tag || 'General';
+    topicCounts[topic] = (topicCounts[topic] || 0) + 1;
   });
 
-  const topPatterns = (patternStatsRes.data ?? []).map(ps => ({
-    category: ps.pattern,
-    count: ps.solved_count,
-    accuracy: ps.mastery_score
-  }));
+  const topPatterns = Object.entries(topicCounts)
+    .map(([category, count]) => ({ category, count, solved: count, revised: 0 }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
-  const avgConfidence = problems.length
-    ? (problems.reduce((s, p) => s + (p.confidence ?? 3), 0) / problems.length).toFixed(1)
-    : 0;
+  // Daily activity by calendar date
+  const activityMap = new Map();
+  attempts.forEach(a => {
+    const dStr = new Date(a.created_at).toLocaleDateString('en-CA');
+    const cur = activityMap.get(dStr) || { date: dStr, solved: 0, revised: 0, total: 0 };
+    if (a.attempt_type === 'initial_solve') cur.solved += 1;
+    else cur.revised += 1;
+    cur.total += 1;
+    activityMap.set(dStr, cur);
+  });
+  if (activityMap.size === 0) {
+    solvedProblems.forEach(sp => {
+      const dStr = new Date(sp.created_at).toLocaleDateString('en-CA');
+      const cur = activityMap.get(dStr) || { date: dStr, solved: 0, revised: 0, total: 0 };
+      cur.solved += 1;
+      cur.total += 1;
+      activityMap.set(dStr, cur);
+    });
+  }
 
-  const advAnalytics = advAnalyticsRes.data || {};
+  const dailyActivity = Array.from(activityMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+  // Dynamic streaks
+  const activeDates = Array.from(activityMap.keys()).sort();
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let running = 0;
+  let prevDate = null;
+
+  activeDates.forEach(dStr => {
+    const d = new Date(dStr);
+    if (!prevDate) {
+      running = 1;
+    } else {
+      const diff = Math.round((d - prevDate) / 86400000);
+      if (diff === 1) running += 1;
+      else running = 1;
+    }
+    if (running > longestStreak) longestStreak = running;
+    prevDate = d;
+  });
+
+  if (activeDates.includes(todayStr) || activeDates.includes(yesterdayStr)) {
+    let checkDate = activeDates.includes(todayStr) ? new Date() : yesterday;
+    while (activeDates.includes(checkDate.toLocaleDateString('en-CA'))) {
+      currentStreak += 1;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+  }
+
+  // Last 7 days
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const last7 = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dStr = d.toLocaleDateString('en-CA');
+    const act = activityMap.get(dStr) || { solved: 0, revised: 0 };
+    last7.push({
+      date: dStr,
+      name: days[d.getDay()],
+      solved: act.solved,
+      revised: act.revised
+    });
+  }
+
+  const currentYear = new Date().getFullYear().toString();
+  const activeDaysThisYear = activeDates.filter(d => d.startsWith(currentYear)).length;
 
   return {
-    daily: dailyRes.data || [],
-    stats: statsRes.data || {},
-    diffDistribution: advAnalytics.difficulty_distribution || diffDistribution,
+    summary: {
+      total_solved: totalSolved,
+      total_revised: totalRevised,
+      current_streak: currentStreak,
+      longest_streak: Math.max(longestStreak, currentStreak),
+      average_confidence: avgConf === '—' ? null : Number(avgConf),
+      average_solve_time_seconds: avgSolveTimeSec,
+      average_revision_time_seconds: avgRevTimeSec,
+      fastest_solve_seconds: fastestSolveSec,
+      revision_success_rate: revSuccessRate,
+      active_days_this_year: activeDaysThisYear
+    },
+    stats: {
+      total_solved: totalSolved,
+      total_revised: totalRevised,
+      current_streak: currentStreak,
+      longest_streak: Math.max(longestStreak, currentStreak),
+    },
+    advanced: {
+      average_solve_time: avgSolveTimeSec ? Math.round(avgSolveTimeSec / 60) : null,
+      average_revision_time: avgRevTimeSec ? Math.round(avgRevTimeSec / 60) : null,
+      fastest_solve: fastestSolveSec ? Math.round(fastestSolveSec / 60) : null,
+      revision_success_rate: revSuccessRate,
+      average_solve_time_seconds: avgSolveTimeSec,
+      average_revision_time_seconds: avgRevTimeSec,
+      fastest_solve_seconds: fastestSolveSec,
+      platform_distribution: platformDistribution,
+      difficulty_distribution: diffDistribution,
+    },
+    diffDistribution,
+    platformDistribution,
     topPatterns,
-    avgConfidence,
-    advanced: advAnalytics
+    avgConfidence: avgConf,
+    daily: last7,
+    dailyActivity,
+    history: dailyActivity
   };
 }
 
@@ -512,20 +719,49 @@ export async function getActivityHistory(userId, days = 365) {
   if (!userId) return [];
   const pastDate = new Date();
   pastDate.setDate(pastDate.getDate() - days);
-  const since = pastDate.toISOString().split('T')[0];
+  const sinceIso = pastDate.toISOString();
 
-  const { data, error } = await supabase
-    .from('daily_activity')
-    .select('activity_date, activity_type')
-    .eq('user_id', userId)
-    .gte('activity_date', since)
-    .order('activity_date', { ascending: true });
+  try {
+    const [attemptsRes, dailyRes] = await Promise.all([
+      supabase
+        .from('revision_attempts')
+        .select('created_at, attempt_type')
+        .eq('user_id', userId)
+        .gte('created_at', sinceIso),
+      supabase
+        .from('daily_activity')
+        .select('activity_date, activity_type')
+        .eq('user_id', userId)
+        .gte('activity_date', sinceIso.split('T')[0])
+    ]);
 
-  if (error) {
-    if (error.code === '42P01') return []; // Migration not applied
-    throw error;
+    const dateMap = new Map();
+
+    (attemptsRes.data || []).forEach(a => {
+      const dStr = new Date(a.created_at).toLocaleDateString('en-CA');
+      const cur = dateMap.get(dStr) || { activity_date: dStr, solved: 0, revised: 0, total: 0 };
+      if (a.attempt_type === 'initial_solve') cur.solved += 1;
+      else cur.revised += 1;
+      cur.total += 1;
+      dateMap.set(dStr, cur);
+    });
+
+    (dailyRes.data || []).forEach(d => {
+      if (!dateMap.has(d.activity_date)) {
+        dateMap.set(d.activity_date, {
+          activity_date: d.activity_date,
+          solved: d.activity_type === 'add_problem' ? 1 : 0,
+          revised: d.activity_type === 'complete_revision' ? 1 : 0,
+          total: 1
+        });
+      }
+    });
+
+    return Array.from(dateMap.values()).sort((a, b) => a.activity_date.localeCompare(b.activity_date));
+  } catch (err) {
+    console.error('Error in getActivityHistory:', err);
+    return [];
   }
-  return data || [];
 }
 
 export async function updateUserTimezone(userId) {

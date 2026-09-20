@@ -250,6 +250,10 @@ export function ProblemDetail() {
 
       // Refresh problem state immediately
       await fetchProblem();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('REFETCH_ANALYTICS'));
+      }
     } catch (err) {
       console.error("Failed to record solve attempt:", err);
       alert("Error saving attempt: " + (err.message || 'Please try again.'));
