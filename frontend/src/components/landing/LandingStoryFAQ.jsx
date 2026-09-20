@@ -203,7 +203,7 @@ export const LandingStoryFAQ = () => {
     <div style={{ position: 'relative', zIndex: 10, background: 'transparent' }}>
 
       {/* ── STORY SECTION ─────────────────────────────────────────────────── */}
-      <section id="how-it-works" style={{ padding: '8rem 2rem' }}>
+      <section id="how-it-works" className="landing-story-section" style={{ padding: '8rem 2rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
           <motion.div
@@ -214,7 +214,7 @@ export const LandingStoryFAQ = () => {
             style={{ textAlign: 'center', marginBottom: '5rem' }}
           >
             <h2 style={{
-              fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+              fontSize: 'clamp(2.2rem, 5vw, 4rem)',
               fontWeight: 800,
               color: 'var(--color-text-primary)',
               letterSpacing: '-0.03em',
@@ -237,9 +237,9 @@ export const LandingStoryFAQ = () => {
             </p>
           </motion.div>
 
-          <div style={{
+          <div className="landing-story-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '2rem',
           }}>
             {STORY_POINTS.map((point, idx) => (
@@ -249,7 +249,7 @@ export const LandingStoryFAQ = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-100px' }}
                 transition={{ duration: 0.6, delay: idx * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="gemini-glass"
+                className="gemini-glass landing-story-card"
                 style={{ padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}
               >
                 <div style={{
@@ -279,6 +279,7 @@ export const LandingStoryFAQ = () => {
       {/* ── FAQ SECTION ───────────────────────────────────────────────────── */}
       <section
         id="faq"
+        className="landing-faq-section"
         style={{
           position: 'relative',
           padding: 'clamp(6rem, 10vw, 10rem) 1.5rem clamp(7rem, 12vw, 12rem)',

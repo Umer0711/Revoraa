@@ -226,9 +226,9 @@ export const LandingHero = () => {
   };
 
   return (
-    <section className="landing-ambient-bg" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: '80px', position: 'relative', overflow: 'hidden' }}>
+    <section className="landing-ambient-bg landing-hero-section" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', paddingTop: '80px', position: 'relative', overflow: 'hidden' }}>
       
-      <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center', zIndex: 10 }}>
+      <div className="landing-hero-grid" style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 2rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center', zIndex: 10 }}>
         
         {/* LEFT: Text Content */}
         <motion.div 
@@ -238,17 +238,17 @@ export const LandingHero = () => {
           style={{ position: 'relative', zIndex: 20 }}
         >
           
-          <h1 style={{ fontSize: 'clamp(4rem, 7vw, 6.5rem)', fontWeight: 700, letterSpacing: '-0.05em', lineHeight: 1.05, color: isLight ? '#151515' : '#fff', marginBottom: '1.5rem' }}>
+          <h1 className="landing-hero-title" style={{ fontSize: 'clamp(3.5rem, 6vw, 6.5rem)', fontWeight: 700, letterSpacing: '-0.05em', lineHeight: 1.05, color: isLight ? '#151515' : '#fff', marginBottom: '1.5rem' }}>
             <TextReveal delay={0.2}>Practice with purpose.</TextReveal>
           </h1>
           
-          <div style={{ fontSize: '1.35rem', color: isLight ? '#555555' : 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: '520px', fontWeight: 400, marginBottom: '3.5rem', letterSpacing: '-0.01em' }}>
+          <div className="landing-hero-subtext" style={{ fontSize: '1.35rem', color: isLight ? '#555555' : 'var(--color-text-secondary)', lineHeight: 1.6, maxWidth: '520px', fontWeight: 400, marginBottom: '3.5rem', letterSpacing: '-0.01em' }}>
             <TextReveal delay={0.4}>
               Every solved problem deserves to be remembered. Knowledge compounds. Master interviews one revision at a time.
             </TextReveal>
           </div>
           
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="landing-hero-ctas" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <Link to="/signup" style={{ textDecoration: 'none' }}>
               <MagneticButton style={{ background: isLight ? '#151515' : '#fff', color: isLight ? '#FAF8F5' : '#000', padding: '1.1rem 2.2rem', borderRadius: '999px', fontSize: '1rem', fontWeight: 600, border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: isLight ? '0 8px 30px rgba(0,0,0,0.18)' : '0 8px 30px rgba(255,255,255,0.2)' }}>
                 Get Started
@@ -265,6 +265,7 @@ export const LandingHero = () => {
 
         {/* RIGHT: Interactive Desktop Mockup */}
         <motion.div 
+          className="landing-hero-mockup"
           initial={{ opacity: 0, y: 50, rotateX: 15, rotateY: -10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1 }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}

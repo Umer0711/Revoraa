@@ -18,7 +18,7 @@ export const DesktopShell = ({ children, activeTargetId, onCursorActionComplete,
 
   return (
     <div 
-      className="gemini-glass"
+      className="gemini-glass desktop-shell-container"
       ref={registerContainer}
       style={{ 
         width: '100%', 
@@ -44,7 +44,7 @@ export const DesktopShell = ({ children, activeTargetId, onCursorActionComplete,
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         
         {/* Sidebar */}
-        <div style={{ width: '220px', borderRight: '1px solid rgba(255,255,255,0.05)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', background: 'rgba(255,255,255,0.01)' }}>
+        <div className="desktop-shell-sidebar" style={{ width: '220px', borderRight: '1px solid rgba(255,255,255,0.05)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', background: 'rgba(255,255,255,0.01)' }}>
           {NAV_ITEMS.map((item) => (
             <div 
               key={item.id}
@@ -69,7 +69,7 @@ export const DesktopShell = ({ children, activeTargetId, onCursorActionComplete,
         </div>
 
         {/* Main Content Area */}
-        <div style={{ flex: 1, position: 'relative', padding: '2rem', overflow: 'hidden' }}>
+        <div className="desktop-shell-content" style={{ flex: 1, position: 'relative', padding: '2rem', overflow: 'hidden' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab} // changing key triggers AnimatePresence

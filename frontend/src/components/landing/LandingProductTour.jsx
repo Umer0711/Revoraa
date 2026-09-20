@@ -47,12 +47,12 @@ export const LandingProductTour = () => {
   const content = CHAPTERS[activeView] || CHAPTERS['dashboard'];
 
   return (
-    <section className="landing-ambient-bg" style={{ padding: '8rem 2rem', position: 'relative', overflow: 'hidden', minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+    <section className="landing-ambient-bg landing-tour-section" style={{ padding: '8rem 2rem', position: 'relative', overflow: 'hidden', minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
       
-      <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', gap: '4rem', alignItems: 'center', width: '100%' }}>
+      <div className="landing-tour-container" style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', gap: '4rem', alignItems: 'center', width: '100%' }}>
         
         {/* Left Side: Dynamic Text */}
-        <div style={{ flex: '1 1 350px', maxWidth: '500px' }}>
+        <div className="landing-tour-text" style={{ flex: '1 1 350px', maxWidth: '500px' }}>
           <AnimatePresence mode="wait">
             <motion.div 
               key={activeView}
@@ -64,7 +64,7 @@ export const LandingProductTour = () => {
               <div style={{ color: content.color, fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {content.number} <span style={{ width: 30, height: 1, background: content.color }} />
               </div>
-              <h2 style={{ fontSize: 'clamp(3rem, 5vw, 4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.04em', margin: '0 0 1.5rem', lineHeight: 1.05 }}>
+              <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.04em', margin: '0 0 1.5rem', lineHeight: 1.05 }}>
                 {content.title}
               </h2>
               <p style={{ fontSize: '1.25rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, margin: 0, letterSpacing: '-0.01em' }}>
@@ -75,7 +75,7 @@ export const LandingProductTour = () => {
         </div>
 
         {/* Right Side: Demo Application */}
-        <div style={{ flex: '1 1 700px' }}>
+        <div className="landing-tour-demo" style={{ flex: '1 1 700px' }}>
           <DemoOrchestrator onStateChange={setActiveView} />
         </div>
 

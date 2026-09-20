@@ -215,37 +215,11 @@
 
 @media (max-width: 768px) {
   .top-navbar {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
-    background: var(--color-bg-glass);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid var(--color-border-glass);
+    display: none !important;
   }
 
   /* Hide the desktop sidebar on mobile */
   .sidebar.desktop-sidebar {
     display: none !important;
-  }
-  .sidebar {
-    left: 0.5rem;
-    top: 0.5rem;
-    height: calc(100vh - 1rem);
-    transform: translateX(calc(-100% - 1rem));
-    transition: transform 0.3s cubic-bezier(0.22,1,0.36,1);
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-backdrop {
-    display: block;
   }
 }

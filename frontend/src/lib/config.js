@@ -69,6 +69,17 @@ export const authConfig = {
 
 // ─── Firebase / FCM ───────────────────────────────────────────────────────────
 
+const isValidVapidKey = (key) => {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (trimmed.length < 50) return false;
+  if (/^(your|placeholder|demo|test|xxx)/i.test(trimmed)) return false;
+  return true;
+};
+
+const rawVapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || null;
+const validVapidKey = isValidVapidKey(rawVapidKey) ? rawVapidKey.trim() : null;
+
 export const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            || null,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        || null,
@@ -76,14 +87,14 @@ export const firebaseConfig = {
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET    || null,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || null,
   appId:             import.meta.env.VITE_FIREBASE_APP_ID             || null,
-  vapidKey:          import.meta.env.VITE_FIREBASE_VAPID_KEY          || null,
-  /** True only when all FCM-required keys are present */
+  vapidKey:          validVapidKey,
+  /** True only when all FCM-required keys are validly present */
   isConfigured: Boolean(
     import.meta.env.VITE_FIREBASE_API_KEY &&
     import.meta.env.VITE_FIREBASE_PROJECT_ID &&
     import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID &&
     import.meta.env.VITE_FIREBASE_APP_ID &&
-    import.meta.env.VITE_FIREBASE_VAPID_KEY
+    validVapidKey
   ),
 };
 

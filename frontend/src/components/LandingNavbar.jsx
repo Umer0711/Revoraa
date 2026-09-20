@@ -72,6 +72,7 @@ export const LandingNavbar = () => {
         }}
       >
         <motion.nav
+          className="landing-nav-bar"
           animate={{
             height: scrolled ? 68 : 74,
             background: scrolled

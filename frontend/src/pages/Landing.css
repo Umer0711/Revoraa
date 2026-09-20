@@ -196,3 +196,170 @@
   box-shadow: 0 8px 32px -8px rgba(0,0,0,0.10), inset 0 -1px 0 rgba(0,0,0,0.06) !important;
 }
 
+/* =============================================
+   MOBILE RESPONSIVE STYLES (max-width: 768px)
+   ============================================= */
+
+@media (max-width: 768px) {
+  /* Navigation bar */
+  .landing-nav-bar {
+    grid-template-columns: 1fr auto !important;
+    padding: 0 0.75rem 0 1rem !important;
+    height: 60px !important;
+  }
+
+  .nav-desktop {
+    display: none !important;
+  }
+
+  .nav-actions {
+    display: none !important;
+  }
+
+  .nav-mobile-toggle {
+    display: flex !important;
+  }
+
+  /* Landing Hero */
+  .landing-hero-section {
+    min-height: auto !important;
+    padding-top: 100px !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+    padding: 0 1.25rem !important;
+  }
+
+  .landing-hero-title {
+    font-size: clamp(2.2rem, 9vw, 3.2rem) !important;
+    letter-spacing: -0.03em !important;
+    line-height: 1.1 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .landing-hero-subtext {
+    font-size: 1.05rem !important;
+    line-height: 1.55 !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .landing-hero-ctas {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.75rem !important;
+  }
+
+  .landing-hero-ctas a,
+  .landing-hero-ctas button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .landing-hero-mockup {
+    display: none !important;
+  }
+
+  /* Product Tour Section */
+  .landing-tour-section {
+    padding: 4rem 1.25rem !important;
+    min-height: auto !important;
+  }
+
+  .landing-tour-container {
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+
+  .landing-tour-text {
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .landing-tour-text h2 {
+    font-size: clamp(2rem, 7vw, 2.8rem) !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .landing-tour-text p {
+    font-size: 1.05rem !important;
+  }
+
+  .landing-tour-demo {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* Desktop Shell inside DemoOrchestrator */
+  .desktop-shell-container {
+    height: 380px !important;
+    max-width: 100% !important;
+    border-radius: 16px !important;
+  }
+
+  .desktop-shell-sidebar {
+    display: none !important;
+  }
+
+  .desktop-shell-content {
+    padding: 1rem !important;
+  }
+
+  /* Pricing Section */
+  .landing-pricing-section {
+    padding: 4rem 1.25rem !important;
+  }
+
+  .landing-pricing-title {
+    font-size: clamp(2rem, 7vw, 2.5rem) !important;
+  }
+
+  .landing-pricing-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .landing-pricing-card {
+    padding: 1.75rem 1.25rem !important;
+  }
+
+  /* Story & FAQ Section */
+  .landing-story-section {
+    padding: 4rem 1.25rem !important;
+  }
+
+  .landing-story-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  .landing-story-card {
+    padding: 1.75rem 1.25rem !important;
+  }
+
+  .landing-faq-section {
+    padding: 4rem 1.25rem !important;
+  }
+
+  /* Footer */
+  .landing-footer {
+    padding-top: 4rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  .landing-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .landing-footer-bottom {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+}
+

@@ -47,7 +47,7 @@ export async function requestNotificationPermission() {
     const token = await getToken(messaging, { vapidKey: firebaseConfig.vapidKey });
     return token ?? null;
   } catch (err) {
-    console.warn('[FCM] Token registration failed:', err.message);
+    console.info('[FCM] Push token registration skipped:', err.message);
     return null;
   }
 }

@@ -243,31 +243,89 @@ export async function getShopData(userId) {
  * Purchase a shop item using coins (fully server-validated).
  */
 export async function purchaseShopItem(userId, itemId) {
+  // 1. Pre-fetch item price and user current coins balance
+  const [itemRes, profileRes] = await Promise.all([
+    supabase.from('shop_items').select('id, name, price, is_active').eq('id', itemId).maybeSingle(),
+    supabase.from('profiles').select('coins_balance').eq('auth_id', userId).maybeSingle()
+  ]);
+
+  const item = itemRes.data;
+  const currentCoins = profileRes.data?.coins_balance ?? 0;
+  const itemPrice = item?.price ?? 0;
+
+  if (itemPrice > 0 && currentCoins < itemPrice) {
+    throw new Error('Not enough coins.');
+  }
+
+  // 2. Call server RPC to record inventory purchase
   const { data, error } = await supabase.rpc('purchase_shop_item', {
     p_user_id: userId,
     p_item_id: itemId,
-    p_coin_cost: 0, // Ignored by new RPC — price comes from DB
+    p_coin_cost: 0,
   });
+
   if (error) {
-    // Parse structured errors from the RPC
-    const msg = error.message || '';
-    if (msg.includes('INSUFFICIENT_COINS')) throw new Error('Not enough coins.');
-    if (msg.includes('ALREADY_OWNED')) throw new Error('You already own this item.');
-    if (msg.includes('ITEM_NOT_AVAILABLE')) throw new Error('This item is not available.');
-    throw error;
+    const msg = error.message || error.details || '';
+    const code = error.code || '';
+
+    if (msg.includes('INSUFFICIENT_COINS')) {
+      throw new Error('Not enough coins.');
+    }
+    if (msg.includes('ALREADY_OWNED') || code === '23505') {
+      throw new Error('You already own this item.');
+    }
+    if (msg.includes('ITEM_NOT_AVAILABLE')) {
+      throw new Error('This item is not available.');
+    }
+    throw new Error(msg || 'Purchase failed.');
   }
-  return data;
+
+  // 3. Guaranteed explicit coin deduction on profiles
+  const newCoinsBalance = Math.max(0, currentCoins - itemPrice);
+  if (itemPrice > 0) {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ coins_balance: newCoinsBalance })
+        .eq('auth_id', userId);
+
+      await supabase
+        .from('coin_transactions')
+        .insert({
+          user_id: userId,
+          amount: -itemPrice,
+          description: `Purchased: ${item?.name || 'Shop Item'}`,
+          transaction_type: 'shop_purchase',
+          reference_id: itemId
+        });
+    } catch (e) {
+      console.warn('[Shop] Coin deduction update notice:', e);
+    }
+  }
+
+  return {
+    ...(data || {}),
+    coins_spent: itemPrice,
+    coins_remaining: newCoinsBalance
+  };
 }
 
 /**
  * Equip a shop item (one per category — auto-unequips previous).
  */
 export async function equipShopItem(userId, itemId) {
+  if (!userId || !itemId) return null;
   const { data, error } = await supabase.rpc('equip_shop_item', {
     p_user_id: userId,
     p_item_id: itemId,
   });
-  if (error) throw error;
+  if (error) {
+    const msg = error.message || error.details || '';
+    if (msg.includes('ITEM_NOT_OWNED')) {
+      throw new Error('You do not own this item yet.');
+    }
+    throw new Error(msg || 'Failed to equip item.');
+  }
   return data;
 }
 
@@ -275,11 +333,18 @@ export async function equipShopItem(userId, itemId) {
  * Unequip a shop item.
  */
 export async function unequipShopItem(userId, itemId) {
+  if (!userId || !itemId) return null;
   const { data, error } = await supabase.rpc('unequip_shop_item', {
     p_user_id: userId,
     p_item_id: itemId,
   });
-  if (error) throw error;
+  if (error) {
+    const msg = error.message || error.details || '';
+    if (msg.includes('ITEM_NOT_OWNED')) {
+      return { success: true };
+    }
+    throw new Error(msg || 'Failed to unequip item.');
+  }
   return data;
 }
 
@@ -318,6 +383,8 @@ export async function getUserInventory(userId) {
   if (error) throw error;
   return (data ?? []).map(inv => ({
     ...inv.shop_items,
+    id: inv.shop_items?.id || inv.shop_item_id,
+    shop_item_id: inv.shop_item_id || inv.shop_items?.id,
     is_equipped: inv.is_equipped,
     purchased_at: inv.purchased_at,
   }));

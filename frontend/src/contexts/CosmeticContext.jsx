@@ -183,23 +183,23 @@ export const CosmeticProvider = ({ children }) => {
   };
 
   const equip = async (itemId) => {
-    if (!user) return;
+    if (!user || !itemId) return;
     try {
       await equipShopItem(user.id, itemId);
       await fetchCosmetics();
     } catch (err) {
-      console.error('Error equipping item:', err);
+      console.warn('[Cosmetics] Failed to equip item:', err.message);
       throw err;
     }
   };
 
   const unequip = async (itemId) => {
-    if (!user) return;
+    if (!user || !itemId) return;
     try {
       await unequipShopItem(user.id, itemId);
       await fetchCosmetics();
     } catch (err) {
-      console.error('Error unequipping item:', err);
+      console.warn('[Cosmetics] Failed to unequip item:', err.message);
       throw err;
     }
   };

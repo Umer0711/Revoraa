@@ -147,7 +147,7 @@ export const LandingPricing = () => {
   };
 
   return (
-    <section id="pricing" style={{ padding: '6rem 2rem', position: 'relative', overflow: 'hidden' }}>
+    <section id="pricing" className="landing-pricing-section" style={{ padding: '6rem 2rem', position: 'relative', overflow: 'hidden' }}>
       
       {/* Background Orbs */}
       <div style={{ position: 'absolute', top: '20%', left: '10%', width: '300px', height: '300px', background: 'var(--color-primary)', filter: 'blur(120px)', opacity: 0.15, borderRadius: '50%' }} />
@@ -164,11 +164,12 @@ export const LandingPricing = () => {
             <Sparkles size={14} /> Premium Access
           </motion.div>
           <motion.h2 
+            className="landing-pricing-title"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+            style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
           >
             Invest in your career
           </motion.h2>
@@ -225,10 +226,11 @@ export const LandingPricing = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'stretch' }}>
+        <div className="landing-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', alignItems: 'stretch' }}>
           
           {/* Free Tier */}
           <motion.div
+            className="landing-pricing-card"
             whileHover={{ y: -5 }}
             style={{ background: 'var(--color-bg-glass)', border: '1px solid var(--color-border)', borderRadius: '1.5rem', padding: '2.5rem', display: 'flex', flexDirection: 'column' }}
           >
@@ -261,6 +263,7 @@ export const LandingPricing = () => {
 
           {/* Pro Tier (Popular) */}
           <motion.div
+            className="landing-pricing-card"
             whileHover={{ y: -5 }}
             style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-primary)', borderRadius: '1.5rem', padding: '2.5rem', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 20px 40px rgba(255, 171, 0, 0.05)' }}
           >

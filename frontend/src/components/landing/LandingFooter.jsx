@@ -40,6 +40,7 @@ const SOCIAL_LINKS = [
 export const LandingFooter = () => {
   return (
     <motion.footer 
+      className="landing-footer"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -52,7 +53,7 @@ export const LandingFooter = () => {
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem', position: 'relative', zIndex: 10 }}>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', paddingBottom: '6rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="landing-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', paddingBottom: '6rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           
           {/* Brand Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '340px' }}>
@@ -97,7 +98,7 @@ export const LandingFooter = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2.5rem', color: 'var(--color-text-muted)', fontSize: '0.9rem', gap: '1.5rem' }}>
+        <div className="landing-footer-bottom" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2.5rem', color: 'var(--color-text-muted)', fontSize: '0.9rem', gap: '1.5rem' }}>
           <span style={{ fontWeight: 500 }}>© 2026 Revoraa Inc.</span>
           
           <div style={{ display: 'flex', gap: '1.25rem' }}>

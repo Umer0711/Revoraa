@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Coins, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -54,6 +54,7 @@ export function Shop() {
   
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
+  const processingRef = useRef(new Set());
 
   const fetchShopAndCoins = useCallback(async () => {
     if (!user) return;
@@ -91,54 +92,94 @@ export function Shop() {
   }, [user, fetchShopAndCoins]);
 
   const handlePurchase = async (product) => {
-    if (coins >= product.price) {
-      try {
-        setProcessing(product.id);
-        const res = await purchaseShopItem(user.id, product.id);
-        
-        // Optimistically update
-        setCoins(res.coins_remaining);
-        
-        setShopItems(prev => prev.map(i => i.id === product.id ? { ...i, owned: true } : i));
-        setInventoryItems(prev => [{ ...product, is_equipped: false, purchased_at: new Date().toISOString() }, ...prev]);
+    const itemId = product.id || product.shop_item_id;
+    if (!user || !itemId) return;
+    if (processingRef.current.has(itemId)) return;
+    if (product.owned) return;
+    if (coins < product.price) return;
 
-        confetti({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: [product.color || '#f59e0b', '#3b82f6', '#10b981']
-        });
-      } catch (err) {
-        alert("Purchase failed: " + err.message);
-      } finally {
-        setProcessing(null);
+    try {
+      processingRef.current.add(itemId);
+      setProcessing(itemId);
+      const res = await purchaseShopItem(user.id, itemId);
+      
+      // Update coins
+      if (res && res.coins_remaining !== undefined) {
+        setCoins(res.coins_remaining);
       }
+      
+      // Mark as owned in shop
+      setShopItems(prev => prev.map(i => (i.id === itemId || i.shop_item_id === itemId) ? { ...i, owned: true } : i));
+      
+      // Add item directly into inventory view
+      const newInvEntry = {
+        ...product,
+        id: itemId,
+        shop_item_id: itemId,
+        owned: true,
+        is_equipped: false,
+        purchased_at: new Date().toISOString()
+      };
+      
+      setInventoryItems(prev => {
+        const alreadyInInv = prev.some(i => (i.id === itemId || i.shop_item_id === itemId));
+        return alreadyInInv ? prev : [newInvEntry, ...prev];
+      });
+
+      // Background re-fetch to stay 100% synced with DB
+      fetchShopAndCoins().catch(() => {});
+
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: [product.color || '#f59e0b', '#3b82f6', '#10b981']
+      });
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('already own') || msg.includes('ALREADY_OWNED')) {
+        setShopItems(prev => prev.map(i => (i.id === itemId || i.shop_item_id === itemId) ? { ...i, owned: true } : i));
+        fetchShopAndCoins().catch(() => {});
+      } else {
+        alert("Purchase failed: " + msg);
+      }
+    } finally {
+      processingRef.current.delete(itemId);
+      setProcessing(null);
     }
   };
 
   const handleEquip = async (product) => {
+    const itemId = product.id || product.shop_item_id;
+    if (!user || !itemId) return;
+    if (processingRef.current.has(itemId)) return;
+
     try {
-      setProcessing(product.id);
-      if (product.equipped || (viewMode === 'inventory' && product.is_equipped)) {
-        await unequip(product.id || product.shop_item_id);
+      processingRef.current.add(itemId);
+      setProcessing(itemId);
+      const isEquipped = product.equipped || (viewMode === 'inventory' && product.is_equipped);
+
+      if (isEquipped) {
+        await unequip(itemId);
         // Optimistic update
-        setShopItems(prev => prev.map(i => i.id === product.id ? { ...i, equipped: false } : i));
-        setInventoryItems(prev => prev.map(i => i.shop_item_id === product.shop_item_id ? { ...i, is_equipped: false } : i));
+        setShopItems(prev => prev.map(i => (i.id === itemId || i.shop_item_id === itemId) ? { ...i, equipped: false } : i));
+        setInventoryItems(prev => prev.map(i => (i.id === itemId || i.shop_item_id === itemId) ? { ...i, is_equipped: false } : i));
       } else {
-        await equip(product.id || product.shop_item_id);
+        await equip(itemId);
         // Optimistic update
         setShopItems(prev => prev.map(i => {
-          if (i.category === product.category) return { ...i, equipped: i.id === product.id };
+          if (i.category === product.category) return { ...i, equipped: (i.id === itemId || i.shop_item_id === itemId) };
           return i;
         }));
         setInventoryItems(prev => prev.map(i => {
-          if (i.category === product.category) return { ...i, is_equipped: i.shop_item_id === product.shop_item_id };
+          if (i.category === product.category) return { ...i, is_equipped: (i.id === itemId || i.shop_item_id === itemId) };
           return i;
         }));
       }
     } catch (err) {
       alert("Failed to change equip state: " + err.message);
     } finally {
+      processingRef.current.delete(itemId);
       setProcessing(null);
     }
   };
