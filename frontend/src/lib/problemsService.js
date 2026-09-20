@@ -12,6 +12,119 @@ import { supabase } from './supabaseClient';
 import { getInitialRevisionDate, calculateNextRevision } from './revisionEngine';
 import { onProblemAdded, onRevisionCompleted } from './eventOrchestrator';
 
+/**
+ * Format seconds into a clean human-readable duration
+ * Examples: 45 -> "45s", 200 -> "3m 20s", 900 -> "15m", 4320 -> "1h 12m"
+ */
+export function formatDuration(seconds) {
+  if (seconds == null || isNaN(seconds) || seconds < 0) return '—';
+  const totalSecs = Math.round(Number(seconds));
+  if (totalSecs === 0) return '0s';
+  if (totalSecs < 60) return `${totalSecs}s`;
+  
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+  return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
+}
+
+/**
+ * Format seconds into a MM:SS or HH:MM:SS timer format
+ */
+export function formatTimerDisplay(seconds) {
+  if (seconds == null || isNaN(seconds) || seconds < 0) return '00:00';
+  const totalSecs = Math.floor(Number(seconds));
+  const hours = Math.floor(totalSecs / 3600);
+  const minutes = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
+  }
+  return `${pad(minutes)}:${pad(secs)}`;
+}
+
+/**
+ * Client-side calculation of authoritative problem metrics directly from attempts
+ */
+export function calculateProblemStatsFromAttempts(attempts = []) {
+  if (!attempts || attempts.length === 0) {
+    return {
+      best_time: null,
+      best_time_seconds: null,
+      average_time: null,
+      average_time_seconds: null,
+      latest_time: null,
+      latest_time_seconds: null,
+      initial_time: null,
+      initial_time_seconds: null,
+      improvement_pct: 0,
+      total_attempts: 0
+    };
+  }
+
+  const sorted = [...attempts].sort((a, b) => new Date(a.created_at || a.completed_at || 0) - new Date(b.created_at || b.completed_at || 0));
+
+  const getSecs = (att) => {
+    if (att.duration_seconds != null && !isNaN(att.duration_seconds)) return Number(att.duration_seconds);
+    if (att.time_taken != null && !isNaN(att.time_taken)) return Number(att.time_taken) * 60;
+    return null;
+  };
+
+  const validAttempts = sorted.filter(a => getSecs(a) != null);
+  if (validAttempts.length === 0) {
+    return {
+      best_time: null,
+      best_time_seconds: null,
+      average_time: null,
+      average_time_seconds: null,
+      latest_time: null,
+      latest_time_seconds: null,
+      initial_time: null,
+      initial_time_seconds: null,
+      improvement_pct: 0,
+      total_attempts: 0
+    };
+  }
+
+  const initialAttempt = validAttempts[0];
+  const latestAttempt = validAttempts[validAttempts.length - 1];
+
+  const initialSec = getSecs(initialAttempt);
+  const latestSec = getSecs(latestAttempt);
+
+  const bestSec = Math.min(...validAttempts.map(getSecs));
+  const avgSec = Math.round(validAttempts.reduce((sum, a) => sum + getSecs(a), 0) / validAttempts.length);
+
+  const initialMins = Math.round(initialSec / 60);
+  const latestMins = Math.round(latestSec / 60);
+  const bestMins = Math.round(bestSec / 60);
+  const avgMins = Math.round((avgSec / 60) * 10) / 10;
+
+  let improvementPct = 0;
+  if (initialSec > 0 && latestSec != null) {
+    improvementPct = Math.round(((initialSec - latestSec) / initialSec) * 1000) / 10;
+  }
+
+  return {
+    best_time: bestMins,
+    best_time_seconds: bestSec,
+    average_time: avgMins,
+    average_time_seconds: avgSec,
+    latest_time: latestMins,
+    latest_time_seconds: latestSec,
+    initial_time: initialMins,
+    initial_time_seconds: initialSec,
+    improvement_pct: improvementPct,
+    total_attempts: validAttempts.length
+  };
+}
+
 const LEETCODE_PLATFORM_SLUG = 'leetcode';
 
 // Map LeetCode tags to our Roadmap Topics
@@ -239,6 +352,33 @@ export async function saveSolvedProblem({ problemData, problemId, solveTimeMinut
 
   if (solveErr) throw solveErr;
 
+  // 2.5 Log initial attempt in revision_attempts so history is immediately tracked
+  const initialDurationSec = solveTimeMinutes ? solveTimeMinutes * 60 : null;
+  const nowIso = new Date().toISOString();
+  try {
+    const { error: initialAttemptErr } = await supabase
+      .from('revision_attempts')
+      .insert({
+        problem_id: finalProblemId,
+        user_id: userId,
+        attempt_type: 'initial_solve',
+        attempt_number: 1,
+        time_taken: solveTimeMinutes,
+        duration_seconds: initialDurationSec,
+        confidence,
+        notes,
+        result: 'easy',
+        started_at: initialDurationSec ? new Date(Date.now() - initialDurationSec * 1000).toISOString() : nowIso,
+        completed_at: nowIso,
+        created_at: nowIso
+      });
+    if (initialAttemptErr) {
+      console.warn('Non-fatal error logging initial revision_attempt:', initialAttemptErr.message);
+    }
+  } catch (err) {
+    console.warn('Non-fatal exception logging initial revision_attempt:', err.message);
+  }
+
   // 3. Schedule first revision — insert; non-fatal if it fails (e.g., edge case re-adds)
   const { error: revErr } = await supabase
     .from('revision_schedule')
@@ -419,7 +559,7 @@ export async function getSolvedProblemById(solvedProblemId) {
     try {
       const { data: attempts } = await supabase
         .from('revision_attempts')
-        .select('id, attempt_type, time_taken, confidence, result, created_at')
+        .select('id, attempt_type, attempt_number, time_taken, duration_seconds, confidence, notes, result, started_at, completed_at, created_at')
         .eq('problem_id', data.problem_id)
         .eq('user_id', data.user_id)
         .order('created_at', { ascending: true });
@@ -432,23 +572,24 @@ export async function getSolvedProblemById(solvedProblemId) {
     data.revision_attempts = [];
   }
 
-
-  
-  // Also fetch stats from RPC
+  // Also fetch stats from RPC with authoritative fallback calculation
+  let computedStats = null;
   if (data.problem_id) {
     try {
       const { data: stats } = await supabase.rpc('get_problem_stats', {
         p_user_id: data.user_id,
         p_problem_id: data.problem_id
       });
-      data.stats = stats?.[0] || null;
+      computedStats = Array.isArray(stats) ? stats[0] : stats;
     } catch(e) {
-      console.error("Failed to fetch problem stats", e);
+      console.warn("get_problem_stats RPC error (falling back to client calculation):", e);
     }
-  } else {
-    data.stats = null;
   }
 
+  if (!computedStats || computedStats.best_time == null) {
+    computedStats = calculateProblemStatsFromAttempts(data.revision_attempts);
+  }
+  data.stats = computedStats;
 
   return data;
 }
@@ -463,6 +604,166 @@ export async function updateSolvedProblem(solvedProblemId, updates) {
     .eq('id', solvedProblemId);
   if (error) throw error;
 }
+
+/**
+ * Atomically record a solve / revision attempt for a user problem.
+ */
+export async function recordSolveAttempt({
+  userId,
+  problemId,
+  solvedProblemId,
+  durationSeconds,
+  confidence,
+  result = 'easy',
+  notes = null,
+  startedAt = null,
+  completedAt = null
+}) {
+  const durationSec = Math.max(1, Math.round(Number(durationSeconds) || 60));
+  const timeTakenMins = Math.max(1, Math.round(durationSec / 60));
+  const endIso = completedAt || new Date().toISOString();
+  const startIso = startedAt || new Date(Date.now() - durationSec * 1000).toISOString();
+
+  // Try RPC first for atomicity
+  try {
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('record_solve_attempt', {
+      p_user_id: userId,
+      p_problem_id: problemId,
+      p_duration_seconds: durationSec,
+      p_confidence: confidence,
+      p_result: result,
+      p_notes: notes,
+      p_started_at: startIso,
+      p_completed_at: endIso
+    });
+
+    if (!rpcError && rpcResult?.success) {
+      // Trigger event orchestrator in background
+      onRevisionCompleted(userId, rpcResult.solved_problem_id || solvedProblemId, confidence).catch(console.error);
+      return rpcResult;
+    }
+  } catch (rpcEx) {
+    console.warn('record_solve_attempt RPC failed, running transactional fallback:', rpcEx);
+  }
+
+  // Fallback transactional sequence
+  // 1. Fetch current attempts to get attempt_number
+  const { data: existingAttempts } = await supabase
+    .from('revision_attempts')
+    .select('id, attempt_number')
+    .eq('user_id', userId)
+    .eq('problem_id', problemId);
+
+  const attemptNumber = (existingAttempts?.length || 0) + 1;
+  const attemptType = attemptNumber === 1 ? 'initial_solve' : 'manual_revision';
+
+  // 2. Insert new attempt record
+  const { data: newAttempt, error: insertErr } = await supabase
+    .from('revision_attempts')
+    .insert({
+      problem_id: problemId,
+      user_id: userId,
+      attempt_type: attemptType,
+      attempt_number: attemptNumber,
+      time_taken: timeTakenMins,
+      duration_seconds: durationSec,
+      confidence,
+      notes,
+      result,
+      started_at: startIso,
+      completed_at: endIso,
+      created_at: endIso
+    })
+    .select()
+    .single();
+
+  if (insertErr) throw insertErr;
+
+  // 3. Update solved_problems
+  let targetSolvedProblemId = solvedProblemId;
+  if (!targetSolvedProblemId) {
+    const { data: spRow } = await supabase
+      .from('solved_problems')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('problem_id', problemId)
+      .maybeSingle();
+    targetSolvedProblemId = spRow?.id;
+  }
+
+  let nextRevisionDate = null;
+
+  if (targetSolvedProblemId) {
+    await supabase
+      .from('solved_problems')
+      .update({
+        confidence,
+        last_revised_at: endIso,
+        status: result === 'easy' && confidence >= 4 ? 'mastered' : 'revising',
+        notes: notes || undefined
+      })
+      .eq('id', targetSolvedProblemId);
+
+    // 4. Update Spaced Repetition schedule
+    const { data: currentSchedule } = await supabase
+      .from('revision_schedule')
+      .select('id, revision_number, ease_factor, interval_days')
+      .eq('solved_problem_id', targetSolvedProblemId)
+      .eq('is_completed', false)
+      .order('next_revision_date', { ascending: true })
+      .maybeSingle();
+
+    const next = calculateNextRevision({
+      revisionNumber: currentSchedule?.revision_number ?? 0,
+      easeFactor: currentSchedule?.ease_factor ?? 2.5,
+      intervalDays: currentSchedule?.interval_days ?? 1,
+      result,
+      confidence
+    });
+
+    nextRevisionDate = next.nextDate;
+
+    if (currentSchedule?.id) {
+      await supabase
+        .from('revision_schedule')
+        .update({ is_completed: true, updated_at: endIso })
+        .eq('id', currentSchedule.id);
+    }
+
+    await supabase
+      .from('revision_schedule')
+      .insert({
+        user_id: userId,
+        solved_problem_id: targetSolvedProblemId,
+        revision_number: next.revisionNumber,
+        next_revision_date: next.nextDate,
+        interval_days: next.intervalDays,
+        ease_factor: next.easeFactor,
+        is_completed: false
+      });
+  }
+
+  // 5. Update user stats
+  try {
+    await supabase.rpc('increment_user_stat', { p_user_id: userId, p_column: 'total_revised', p_amount: 1 });
+  } catch (e) {
+    // Non-fatal if stat increment RPC is missing or fails
+  }
+
+  // 6. Trigger orchestrator
+  if (targetSolvedProblemId) {
+    onRevisionCompleted(userId, targetSolvedProblemId, confidence).catch(console.error);
+  }
+
+  return {
+    success: true,
+    attempt_id: newAttempt.id,
+    attempt_number: attemptNumber,
+    solved_problem_id: targetSolvedProblemId,
+    next_revision_date: nextRevisionDate
+  };
+}
+
 /**
  * Submit an instant reinforcement revision.
  * This does NOT alter the scheduled spaced-repetition logic.
