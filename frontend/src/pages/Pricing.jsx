@@ -70,27 +70,15 @@ export const Pricing = () => {
           {/* Usage Stats */}
           <div style={{ minWidth: '250px', flex: 1, maxWidth: '400px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-              <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)' }}>Monthly Usage</span>
-              <span style={{ fontWeight: 700, color: isPremium ? 'var(--color-primary)' : (usageCurrent >= usageLimit ? 'var(--color-mistakes)' : 'var(--color-text-primary)') }}>
-                {isPremium ? 'Unlimited' : `${usageCurrent} / ${usageLimit}`}
+              <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)' }}>Problem Tracking</span>
+              <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
+                Unlimited
               </span>
             </div>
             
-            {!isPremium && (
-              <>
-                <div style={{ width: '100%', height: '8px', background: 'var(--color-bg-light)', borderRadius: '4px', overflow: 'hidden', marginBottom: '0.5rem' }}>
-                  <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: `${Math.min(100, (usageCurrent / usageLimit) * 100)}%` }} 
-                    style={{ height: '100%', background: usageCurrent >= usageLimit ? 'var(--color-mistakes)' : 'var(--color-primary)', borderRadius: '4px' }} 
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                  <span>{usageRemaining} {usageRemaining === 1 ? 'problem' : 'problems'} remaining</span>
-                  <span>Resets on {resetDate}</span>
-                </div>
-              </>
-            )}
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              {usageCurrent} {usageCurrent === 1 ? 'problem' : 'problems'} added this month across your library.
+            </div>
           </div>
         </div>
 

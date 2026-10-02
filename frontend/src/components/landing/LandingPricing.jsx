@@ -247,7 +247,7 @@ export const LandingPricing = () => {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
               {[
                 '10,000 Coins Signup Bonus',
-                '15 new problems per month',
+                'Unlimited problem tracking',
                 'Unlimited revisions',
                 'Basic analytics & roadmap',
                 'Achievements, XP, and Streak',
@@ -295,9 +295,8 @@ export const LandingPricing = () => {
               </li>
               {[
                 billingCycle === 'yearly' ? '50,000 Coins Yearly Bonus' : '20,000 Coins Monthly Bonus',
-                'Unlimited Problems',
+                'Advanced Analytics & Deep Insights',
                 'Unlimited Revisions',
-                'Advanced Analytics',
                 'Premium Themes',
                 'Priority Support',
                 'Early Access to Upcoming Features',

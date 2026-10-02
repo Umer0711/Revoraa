@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
         setProfile(profileData);
         setUsageData({
           problems_added_this_month: profileData.monthly_problem_usage || 0,
-          monthly_problem_limit: profileData.monthly_problem_limit || 15,
+          monthly_problem_limit: profileData.monthly_problem_limit || null,
           usage_reset_date: profileData.usage_reset_date
         });
       }

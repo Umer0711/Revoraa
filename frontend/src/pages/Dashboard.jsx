@@ -331,17 +331,15 @@ export function Dashboard() {
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', marginBottom: '0.25rem' }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 700, color: '#fff', lineHeight: 1 }}>
-                {(isPro || !FEATURES.PREMIUM) ? 'Unlimited' : `${usageData?.problems_added_this_month || 0}`}
+                Unlimited
               </span>
               <span style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', fontWeight: 500, paddingBottom: '0.2rem' }}>
-                {(isPro || !FEATURES.PREMIUM) ? 'Problems' : `/ ${usageData?.monthly_problem_limit || 15} Used`}
+                Problems Tracked
               </span>
             </div>
-            {!isPro && FEATURES.PREMIUM && (
-              <div style={{ width: '100%', height: '6px', background: 'var(--color-bg-light)', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, ((usageData?.problems_added_this_month || 0) / (usageData?.monthly_problem_limit || 15)) * 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '3px' }} />
-              </div>
-            )}
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.25rem' }}>
+              {usageData?.problems_added_this_month || 0} added this month
+            </div>
           </div>
         </motion.div>
 

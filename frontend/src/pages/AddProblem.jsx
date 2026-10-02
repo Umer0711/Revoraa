@@ -37,8 +37,8 @@ export function AddProblem() {
 
   const isPremium = profile?.is_pro === true && new Date(profile?.expires_at) > new Date();
   const usageCurrent = usageData?.problems_added_this_month || 0;
-  const usageLimit = usageData?.monthly_problem_limit || 15;
-  const limitReached = FEATURES.PREMIUM && !isPremium && usageCurrent >= usageLimit;
+  // Unlimited question adding for all users
+  const limitReached = false;
 
   // Form State
   const [url, setUrl] = useState('');
@@ -146,9 +146,7 @@ export function AddProblem() {
       setIsSuccess(true);
       // Removed the setTimeout auto-navigate here for Instant Revision flow
     } catch (err) {
-      if (err.message === 'FREE_LIMIT_EXCEEDED' || err.message.includes('FREE_LIMIT_EXCEEDED')) {
-        setSaveError('FREE_LIMIT_EXCEEDED');
-      } else if (err.message === 'USER_ALREADY_HAS_PROBLEM') {
+      if (err.message === 'USER_ALREADY_HAS_PROBLEM') {
         setSaveError('You have already added this problem to your library. Visit the Problem Library to update or review it.');
       } else {
         setSaveError(err.message || 'An error occurred while saving. Please try again.');
@@ -536,26 +534,11 @@ export function AddProblem() {
               ))}
             </div>
 
-            {saveError === 'FREE_LIMIT_EXCEEDED' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1.25rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,171,0,0.1)', border: '1px solid rgba(255,171,0,0.3)', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)', fontWeight: 600 }}>
-                  <AlertCircle size={18} style={{ flexShrink: 0 }} /> Monthly limit reached
-                </div>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                  Monthly limit reached. Your free quota will reset on {new Date(profile?.usage_reset_date).toLocaleDateString()}.
-                  {FEATURES.PREMIUM && " Upgrade to Pro for unlimited tracking."}
-                </p>
-                {FEATURES.PREMIUM && (
-                  <button onClick={() => window.location.href='/pricing'} className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                    Upgrade to Pro
-                  </button>
-                )}
-              </div>
-            ) : saveError ? (
+            {saveError && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.875rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '0.875rem', marginBottom: '1rem' }}>
                 <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '0.1rem' }} /> {saveError}
               </div>
-            ) : null}
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-secondary" onClick={prevStep}>

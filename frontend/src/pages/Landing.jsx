@@ -6,6 +6,7 @@ import { LandingHero } from '../components/landing/LandingHero';
 import { LandingProductTour } from '../components/landing/LandingProductTour';
 import { LandingStoryFAQ } from '../components/landing/LandingStoryFAQ';
 import { LandingPricing } from '../components/landing/LandingPricing';
+import { LandingCommunity } from '../components/landing/LandingCommunity';
 import { LandingFooter } from '../components/landing/LandingFooter';
 import { AmbientCursor } from '../components/landing/effects/AmbientCursor';
 import { FloatingParticles } from '../components/landing/effects/FloatingParticles';
@@ -34,6 +35,7 @@ export const Landing = () => {
       <LandingProductTour />
       {FEATURES.PREMIUM && <LandingPricing />}
       <LandingStoryFAQ />
+      <LandingCommunity />
       <LandingFooter />
       
     </div>
