@@ -11,10 +11,11 @@ import './VisualDiagram.css';
  * DIFFERENCE_ARRAY, UNION_FIND, KMP, TRIE, ARRAY.
  */
 export function VisualDiagram({ data, lang = 'en' }) {
+  const [activeStep, setActiveStep] = useState(0);
+
   if (!data) return null;
 
   const { type, category, title, input, steps = [], description, description_hi, result } = data;
-  const [activeStep, setActiveStep] = useState(0);
 
   const hasSteps = steps && steps.length > 0;
   const currentStep = hasSteps ? steps[activeStep] : null;

@@ -31,6 +31,14 @@ const Pricing         = lazy(() => import('./pages/Pricing').then(module => ({ d
 const AdminDashboard  = lazy(() => import('./pages/AdminDashboard').then(module => ({ default: module.AdminDashboard })));
 const AdminMonitoring = lazy(() => import('./pages/AdminMonitoring').then(module => ({ default: module.AdminMonitoring })));
 
+// ─── Developer Learning Platform ──────────────────────────────────────────────
+const LearningCatalog = lazy(() => import('./pages/LearningCatalog').then(module => ({ default: module.LearningCatalog })));
+const PathOverview    = lazy(() => import('./pages/PathOverview').then(module => ({ default: module.PathOverview })));
+const LessonRoom      = lazy(() => import('./pages/LessonRoom').then(module => ({ default: module.LessonRoom })));
+const ChallengeRoom   = lazy(() => import('./pages/ChallengeRoom').then(module => ({ default: module.ChallengeRoom })));
+const ProjectRoom     = lazy(() => import('./pages/ProjectRoom').then(module => ({ default: module.ProjectRoom })));
+import { LearningLanguageProvider } from './contexts/LearningLanguageContext';
+
 // ─── Auth & Public Pages ──────────────────────────────────────────────────────
 const Landing         = lazy(() => import('./pages/Landing').then(module => ({ default: module.Landing })));
 const Login           = lazy(() => import('./pages/Login').then(module => ({ default: module.Login })));
@@ -118,6 +126,11 @@ const AnimatedRoutes = () => {
 
           {/* Dashboard Routes */}
           <Route path="/dashboard"     element={<ProtectedRoute><PageWrapper><Dashboard /></PageWrapper></ProtectedRoute>} />
+          <Route path="/learn"         element={<ProtectedRoute><PageWrapper><LearningCatalog /></PageWrapper></ProtectedRoute>} />
+          <Route path="/learn/:pathSlug" element={<ProtectedRoute><PageWrapper><PathOverview /></PageWrapper></ProtectedRoute>} />
+          <Route path="/learn/:pathSlug/challenges/:challengeSlug" element={<ProtectedRoute><PageWrapper><ChallengeRoom /></PageWrapper></ProtectedRoute>} />
+          <Route path="/learn/:pathSlug/projects/:projectSlug" element={<ProtectedRoute><PageWrapper><ProjectRoom /></PageWrapper></ProtectedRoute>} />
+          <Route path="/learn/:pathSlug/:moduleSlug/:topicSlug/:lessonSlug" element={<ProtectedRoute><PageWrapper><LessonRoom /></PageWrapper></ProtectedRoute>} />
           <Route path="/library"       element={<ProtectedRoute><PageWrapper><ProblemLibrary /></PageWrapper></ProtectedRoute>} />
           <Route path="/library/:id"   element={<ProtectedRoute><PageWrapper><ProblemDetail /></PageWrapper></ProtectedRoute>} />
           <Route path="/add-problem"   element={<ProtectedRoute><PageWrapper><AddProblem /></PageWrapper></ProtectedRoute>} />
@@ -154,9 +167,12 @@ const AnimatedRoutes = () => {
 export default function App() {
   return (
     <Router>
-      <GlobalCelebrations />
-      <WelcomeCelebration />
-      <AnimatedRoutes />
+      <LearningLanguageProvider>
+        <GlobalCelebrations />
+        <WelcomeCelebration />
+        <AnimatedRoutes />
+      </LearningLanguageProvider>
     </Router>
   );
 }
+

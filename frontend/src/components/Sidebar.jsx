@@ -7,7 +7,8 @@ import {
   Target, TrendingUp, Hash, AlertCircle,
   Award, Zap, CheckSquare, Settings, HelpCircle,
   Flame, Bell, User, LogOut, CreditCard, Star,
-  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw, Shield, Compass
+  CheckCheck, Trophy, Siren, Menu, X, Moon, Sun, ShoppingCart, Activity, RefreshCw, Shield, Compass,
+  BookOpen
 } from 'lucide-react';
 import { RevoraaLogo } from './RevoraaLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,6 +21,7 @@ import './Sidebar.css';
 
 const navMain = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/learn', label: 'Developer Paths', icon: BookOpen },
   { path: '/library', label: 'Problem Library', icon: Library },
   { path: '/revision', label: "Today's Revision", icon: CalendarCheck },
   { path: '/roadmap', label: 'Roadmap', icon: Map },

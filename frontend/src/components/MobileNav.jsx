@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Compass, CalendarCheck, Target, Menu, X,
   Library, Map, Award, Zap, CheckSquare, ShoppingCart, TrendingUp,
   Hash, AlertCircle, Settings, HelpCircle, Flame, Bell, User, LogOut,
-  Sun, Moon, Shield, ChevronRight, Coins, PlusCircle
+  Sun, Moon, Shield, ChevronRight, Coins, PlusCircle, BookOpen
 } from 'lucide-react';
 import { RevoraaLogo } from './RevoraaLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -285,7 +285,12 @@ export function MobileNav() {
                 <div className="mobile-drawer-group">
                   <span className="mobile-group-title">PRACTICE & LEARNING</span>
                   <div className="mobile-grid-links">
-                    <Link to="/library" className="mobile-nav-card">
+                    <Link to="/learn" className="mobile-nav-card" onClick={() => setDrawerOpen(false)}>
+                      <BookOpen size={18} color="var(--color-primary)" />
+                      <span>Developer Paths</span>
+                      <ChevronRight size={14} className="chevron" />
+                    </Link>
+                    <Link to="/library" className="mobile-nav-card" onClick={() => setDrawerOpen(false)}>
                       <Library size={18} color="var(--color-primary)" />
                       <span>Problem Library</span>
                       <ChevronRight size={14} className="chevron" />

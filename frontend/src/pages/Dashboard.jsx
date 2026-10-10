@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Play, Activity, Target, Award, CheckCircle2, TrendingUp, Clock, AlertCircle, Flame, Zap, ArrowRight } from 'lucide-react';
+import { Play, Activity, Target, Award, CheckCircle2, TrendingUp, Clock, AlertCircle, Flame, Zap, ArrowRight, BookOpen } from 'lucide-react';
 import { motion, animate, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -238,9 +238,15 @@ export function Dashboard() {
                 : 'All caught up! Great work keeping up with your revisions.'}
             </p>
           </div>
-          <Link to="/add-problem" className="btn btn-primary" style={{ flexShrink: 0 }}>
-            <Zap size={15} /> Add Problem
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            <Link to="/learn" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
+              <BookOpen size={15} color="var(--color-primary)" />
+              <span>Developer Paths</span>
+            </Link>
+            <Link to="/add-problem" className="btn btn-primary">
+              <Zap size={15} /> Add Problem
+            </Link>
+          </div>
         </div>
       </header>
 
