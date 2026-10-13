@@ -3,10 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } f
 import { Layout } from './components/Layout';
 import { useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './contexts/ProtectedRoute';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { GlobalCelebrations } from './components/ui/GlobalCelebrations';
 import { WelcomeCelebration } from './components/ui/WelcomeCelebration';
 import { FEATURES } from './lib/features';
+import { AdaptivePerformanceProvider, useAdaptivePerformance } from './contexts/AdaptivePerformanceContext';
 
 const Dashboard       = lazy(() => import('./pages/Dashboard').then(module => ({ default: module.Dashboard })));
 const ProblemLibrary  = lazy(() => import('./pages/ProblemLibrary').then(module => ({ default: module.ProblemLibrary })));
@@ -51,17 +52,22 @@ const OAuthCallback   = lazy(() => import('./pages/OAuthCallback').then(module =
 const OAuthFailed     = lazy(() => import('./pages/OAuthFailed').then(module => ({ default: module.OAuthFailed })));
 
 // ─── Page Transition Wrapper ─────────────────────────────────────────────────
-const PageWrapper = ({ children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12, scale: 0.99 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -8, scale: 0.99 }}
-    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-    style={{ width: '100%' }}
-  >
-    {children}
-  </motion.div>
-);
+const PageWrapper = ({ children }) => {
+  const { effects } = useAdaptivePerformance();
+  const isFade = effects?.pageTransition === 'fade';
+
+  return (
+    <motion.div
+      initial={isFade ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.99 }}
+      animate={isFade ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+      exit={isFade ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.99 }}
+      transition={isFade ? { duration: 0.12, ease: 'linear' } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      style={{ width: '100%' }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 // ─── Accent Bar helper ────────────────────────────────────────────────────────
 const AccentBar = ({ color }) => (
@@ -160,18 +166,26 @@ const AnimatedRoutes = () => {
     </AnimatePresence>
   );
 
-  return isAuthRoute ? content : <Layout>{content}</Layout>;
+  const { reducedMotion } = useAdaptivePerformance();
+
+  return (
+    <MotionConfig reducedMotion={reducedMotion ? 'always' : 'user'}>
+      {isAuthRoute ? content : <Layout>{content}</Layout>}
+    </MotionConfig>
+  );
 };
 
 // ─── App Root ─────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <Router>
-      <LearningLanguageProvider>
-        <GlobalCelebrations />
-        <WelcomeCelebration />
-        <AnimatedRoutes />
-      </LearningLanguageProvider>
+      <AdaptivePerformanceProvider>
+        <LearningLanguageProvider>
+          <GlobalCelebrations />
+          <WelcomeCelebration />
+          <AnimatedRoutes />
+        </LearningLanguageProvider>
+      </AdaptivePerformanceProvider>
     </Router>
   );
 }

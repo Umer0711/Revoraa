@@ -2,41 +2,69 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Trophy, Zap } from 'lucide-react';
+import { useAdaptivePerformance } from '../../contexts/AdaptivePerformanceContext';
 
 export function GlobalCelebrations() {
   const [levelUp, setLevelUp] = useState(null);
   const [achievement, setAchievement] = useState(null);
+  const { isEfficiency, isHighQuality, reducedMotion } = useAdaptivePerformance();
 
   useEffect(() => {
     const handleLevelUp = (e) => {
       const { level, coins } = e.detail;
       setLevelUp({ level, coins });
       
-      // Premium Confetti Burst
-      const duration = 2000;
-      const end = Date.now() + duration;
-
-      const frame = () => {
+      // If user prefers reduced motion or efficiency mode: single brief burst
+      if (reducedMotion || isEfficiency) {
         confetti({
-          particleCount: 5,
+          particleCount: 15,
+          spread: 45,
+          origin: { y: 0.6 },
+          colors: ['#f59e0b', '#ffffff']
+        });
+      } else if (!isHighQuality) {
+        // Balanced: single 40-particle dual burst
+        confetti({
+          particleCount: 20,
           angle: 60,
-          spread: 55,
-          origin: { x: 0 },
+          spread: 45,
+          origin: { x: 0.1 },
           colors: ['#f59e0b', '#fbbf24', '#ffffff']
         });
         confetti({
-          particleCount: 5,
+          particleCount: 20,
           angle: 120,
-          spread: 55,
-          origin: { x: 1 },
+          spread: 45,
+          origin: { x: 0.9 },
           colors: ['#f59e0b', '#fbbf24', '#ffffff']
         });
+      } else {
+        // High quality: full 1.5s rAF burst
+        const duration = 1500;
+        const end = Date.now() + duration;
 
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      };
-      frame();
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#f59e0b', '#fbbf24', '#ffffff']
+          });
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#f59e0b', '#fbbf24', '#ffffff']
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      }
 
       setTimeout(() => setLevelUp(null), 3500);
     };
@@ -45,10 +73,10 @@ export function GlobalCelebrations() {
       const ach = e.detail;
       setAchievement(ach);
 
-      // Subtle celebration
+      const count = (reducedMotion || isEfficiency) ? 15 : (!isHighQuality ? 35 : 80);
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: count,
+        spread: 60,
         origin: { y: 0.6 },
         colors: ['#ec4899', '#f472b6', '#ffffff']
       });
@@ -63,7 +91,7 @@ export function GlobalCelebrations() {
       window.removeEventListener('LEVEL_UP', handleLevelUp);
       window.removeEventListener('ACHIEVEMENT_UNLOCKED', handleAchievement);
     };
-  }, []);
+  }, [isEfficiency, isHighQuality, reducedMotion]);
 
   return (
     <>

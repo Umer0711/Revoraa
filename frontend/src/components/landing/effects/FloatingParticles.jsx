@@ -1,10 +1,15 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useAdaptivePerformance } from '../../../contexts/AdaptivePerformanceContext';
 
 export const FloatingParticles = () => {
-  // Generate random particles once
+  const { effects, isHighQuality } = useAdaptivePerformance();
+  const particleCount = effects?.particlesCount ?? 10;
+
+  // Generate random particles based on adaptive count
   const particles = useMemo(() => {
-    return Array.from({ length: 30 }).map((_, i) => ({
+    if (particleCount <= 0) return [];
+    return Array.from({ length: particleCount }).map((_, i) => ({
       id: i,
       x: Math.random() * 100, // percentage
       y: Math.random() * 100, // percentage
@@ -12,7 +17,12 @@ export const FloatingParticles = () => {
       duration: Math.random() * 20 + 20, // 20s to 40s
       delay: Math.random() * -20 // random negative delay so they don't all start at once
     }));
-  }, []);
+  }, [particleCount]);
+
+  // Completely unmount on efficiency mode or reduced motion
+  if (particleCount <= 0 || particles.length === 0) {
+    return null;
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
@@ -43,7 +53,7 @@ export const FloatingParticles = () => {
             height: p.size,
             borderRadius: '50%',
             background: '#f59e0b',
-            boxShadow: '0 0 10px rgba(245, 158, 11, 0.8)',
+            boxShadow: isHighQuality ? '0 0 10px rgba(245, 158, 11, 0.8)' : 'none',
             transform: 'translate3d(0,0,0)' // GPU accel
           }}
         />

@@ -1000,4 +1000,70 @@ svg {
   pointer-events: none;
 }
 
+/* =============================================
+   REVORAA GLOBAL ADAPTIVE PERFORMANCE TOKENS
+   ============================================= */
 
+/* ─── 1. EFFICIENCY PROFILE ────────────────────────── */
+[data-perf-mode="efficiency"] {
+  --color-bg-glass: rgba(18, 18, 20, 0.96);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-clay: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-liquid: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-glow-primary: none;
+}
+
+[data-theme="light"][data-perf-mode="efficiency"] {
+  --color-bg-glass: rgba(250, 248, 245, 0.98);
+}
+
+/* Eliminate expensive backdrop-filter rasterization on efficiency mode */
+[data-perf-mode="efficiency"] .sidebar,
+[data-perf-mode="efficiency"] .desktop-sidebar,
+[data-perf-mode="efficiency"] .mobile-header,
+[data-perf-mode="efficiency"] .mobile-bottom-nav,
+[data-perf-mode="efficiency"] .mobile-sheet,
+[data-perf-mode="efficiency"] .mobile-backdrop,
+[data-perf-mode="efficiency"] .bento-card,
+[data-perf-mode="efficiency"] .dsa-sidebar,
+[data-perf-mode="efficiency"] .dialog-sheet,
+[data-perf-mode="efficiency"] .readiness-card,
+[data-perf-mode="efficiency"] .problem-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Simplify bento card shadows and disable continuous floating keyframe animations */
+[data-perf-mode="efficiency"] .bento-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  transition: border-color 0.15s ease !important;
+}
+
+[data-perf-mode="efficiency"] .bento-card:hover {
+  transform: none !important;
+}
+
+/* ─── 2. BALANCED PROFILE ──────────────────────────── */
+[data-perf-mode="balanced"] .sidebar,
+[data-perf-mode="balanced"] .desktop-sidebar,
+[data-perf-mode="balanced"] .mobile-header,
+[data-perf-mode="balanced"] .mobile-bottom-nav,
+[data-perf-mode="balanced"] .mobile-sheet {
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+/* ─── 3. HIGH QUALITY PROFILE ──────────────────────── */
+[data-perf-mode="high-quality"] {
+  --shadow-glow-primary: 0 0 40px rgba(245, 158, 11, 0.15);
+}
+
+/* ─── 4. ACCESSIBILITY / REDUCED MOTION ────────────── */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

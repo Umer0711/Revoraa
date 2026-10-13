@@ -3,7 +3,8 @@ import {
   motion } from 'framer-motion';
 import {
   User, Palette, Bell, Shield, Lock, Download, Keyboard, Link as LinkIcon, CreditCard,
-  AlertTriangle, ChevronRight, Monitor, Moon, Sun, Key, Loader2, Check, LogOut
+  AlertTriangle, ChevronRight, Monitor, Moon, Sun, Key, Loader2, Check, LogOut,
+  Cpu, Zap, Sparkles, RotateCcw, BatteryCharging
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../lib/permissions';
@@ -14,6 +15,7 @@ import { FEATURES } from '../lib/features';
 import { authConfig } from '../lib/config';
 import { useNavigate } from 'react-router-dom';
 import { SEO } from '../components/SEO';
+import { useAdaptivePerformance } from '../contexts/AdaptivePerformanceContext';
 
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -79,6 +81,17 @@ export function Settings() {
 
   // Appearance
   const [theme, setTheme] = useState('dark');
+
+  // Adaptive Performance
+  const {
+    mode: perfMode,
+    manualMode: perfManualMode,
+    capabilities: perfCapabilities,
+    isAssessing: perfIsAssessing,
+    reducedMotion,
+    setManualMode: setPerfManualMode,
+    recalibrate: recalibratePerf
+  } = useAdaptivePerformance();
 
   // Notification settings
   const [notifDailyRevision, setNotifDailyRevision] = useState(true);
@@ -287,6 +300,115 @@ export function Settings() {
                   </button>
                 );
               })}
+            </div>
+          </SettingCard>
+
+          {/* Adaptive Performance & Graphics */}
+          <SettingCard 
+            icon={Cpu} 
+            title="Performance & Graphics" 
+            desc="Automatically tailors animations, blur filters, and preview rendering to your hardware." 
+            colSpan={2} 
+            color="var(--color-primary)"
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              {[
+                { id: 'automatic', label: 'Automatic', icon: Zap, hint: 'Auto-adapts to device' },
+                { id: 'efficiency', label: 'Efficiency', icon: BatteryCharging, hint: 'Low blur & battery saver' },
+                { id: 'balanced', label: 'Balanced', icon: Cpu, hint: 'Smooth standard UI' },
+                { id: 'high-quality', label: 'High Quality', icon: Sparkles, hint: 'Full glow & physics' },
+              ].map((p) => {
+                const isSelected = perfManualMode === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setPerfManualMode(p.id);
+                      toast.success(`Performance mode: ${p.label}`);
+                    }}
+                    className="btn"
+                    style={{
+                      padding: '0.85rem 0.75rem',
+                      background: isSelected ? 'var(--color-primary)' : 'var(--color-bg-surface)',
+                      border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-subtle)'}`,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      color: isSelected ? '#fff' : 'var(--color-text-secondary)',
+                      transition: 'all 0.15s ease',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <p.icon size={18} />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{p.label}</span>
+                    <span style={{ fontSize: '0.7rem', opacity: isSelected ? 0.9 : 0.6, textAlign: 'center' }}>{p.hint}</span>
+                    {isSelected && p.id === 'automatic' && (
+                      <span className="badge" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.2)', padding: '1px 6px', marginTop: '0.2rem' }}>
+                        Active: {perfMode}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Hardware Signals & Recalibration Drawer */}
+            <div style={{
+              padding: '0.85rem 1rem',
+              background: 'var(--color-bg-surface)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span className="badge badge-success" style={{ fontSize: '0.72rem', textTransform: 'capitalize' }}>
+                  Mode: {perfMode} {perfManualMode !== 'automatic' ? '(Manual)' : '(Auto)'}
+                </span>
+                {perfCapabilities?.cores && (
+                  <span className="badge" style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.06)' }}>
+                    {perfCapabilities.cores} CPU Cores
+                  </span>
+                )}
+                {perfCapabilities?.memoryGB && (
+                  <span className="badge" style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.06)' }}>
+                    {perfCapabilities.memoryGB} GB RAM
+                  </span>
+                )}
+                {perfCapabilities?.platform && (
+                  <span className="badge" style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.06)', textTransform: 'capitalize' }}>
+                    {perfCapabilities.platform}
+                  </span>
+                )}
+                {reducedMotion && (
+                  <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
+                    Reduced Motion Active
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  await recalibratePerf();
+                  toast.success('Device re-profiled successfully');
+                }}
+                disabled={perfIsAssessing}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.78rem', padding: '0.4rem 0.8rem', gap: '0.4rem' }}
+              >
+                {perfIsAssessing ? (
+                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <RotateCcw size={13} />
+                )}
+                <span>{perfIsAssessing ? 'Measuring...' : 'Recalibrate Device'}</span>
+              </button>
             </div>
           </SettingCard>
 

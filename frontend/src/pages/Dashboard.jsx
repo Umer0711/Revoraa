@@ -10,12 +10,18 @@ import { submitInstantRevision } from '../lib/problemsService';
 import './Dashboard.css';
 import { FEATURES } from '../lib/features';
 import { SEO } from '../components/SEO';
-
+import { useAdaptivePerformance } from '../contexts/AdaptivePerformanceContext';
 
 /* Animated number counter */
 function Counter({ from = 0, to, duration = 1.2, delay = 0.3, suffix = '' }) {
+  const { isEfficiency, reducedMotion } = useAdaptivePerformance();
   const nodeRef = useRef(null);
+
   useEffect(() => {
+    if (isEfficiency || reducedMotion) {
+      if (nodeRef.current) nodeRef.current.textContent = Math.round(to) + suffix;
+      return;
+    }
     const node = nodeRef.current;
     const controls = animate(from, to, {
       duration,
@@ -24,7 +30,12 @@ function Counter({ from = 0, to, duration = 1.2, delay = 0.3, suffix = '' }) {
       onUpdate(v) { if (node) node.textContent = Math.round(v) + suffix; }
     });
     return () => controls.stop();
-  }, [from, to, duration, delay, suffix]);
+  }, [from, to, duration, delay, suffix, isEfficiency, reducedMotion]);
+
+  if (isEfficiency || reducedMotion) {
+    return <span>{to + suffix}</span>;
+  }
+
   return <span ref={nodeRef}>{from + suffix}</span>;
 }
 
