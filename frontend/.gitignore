@@ -23,8 +23,12 @@ scratch/
 scratch_*
 *.csv
 *.json.bak
+.temp/
+supabase/.temp/
+supabase/.branches/
 
 # One-off root scratch scripts
+/*.cjs
 apply_interview_migration.cjs
 apply_migration.cjs
 check_*.cjs
