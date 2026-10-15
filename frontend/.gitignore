@@ -26,6 +26,8 @@ scratch_*
 .temp/
 supabase/.temp/
 supabase/.branches/
+supabase/migrations/
+*.sql
 
 # One-off root scratch scripts
 /*.cjs

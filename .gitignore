@@ -40,11 +40,17 @@ out/
 .vuepress/dist
 .serverless/
 
-# Supabase Local Artifacts
+# Supabase Local Artifacts & Private Database Migrations
+.temp/
 supabase/.temp/
 supabase/.branches/
+frontend/supabase/.temp/
+frontend/supabase/.branches/
 supabase/functions/*/node_modules/
+supabase/migrations/
+frontend/supabase/migrations/
+*.sql
 
-# Ensure migrations and config are NOT ignored
-!supabase/migrations/
+# Keep Supabase local config
 !supabase/config.toml
+!frontend/supabase/config.toml
